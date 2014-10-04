@@ -1,0 +1,58 @@
+## What is this?
+
+This is a [dockerized](https://docker.com/) Android debug symbols database
+
+## What can I do with it?
+
+You can:
+
+* [Incrementally store new symbols package (in .tar.gz format) and commit it as a new image](incremental-storing.html)
+* [List all symbols available from the specific image](symbols-listing.html)
+* [Retrieve specific symbol files inside tar archive](retrieving.html)
+* [Print usage information](usage-printing.html)
+* [Print build identification information (from `build.prop`)](figuring-build.html)
+* [Print sourceable bash script to setup useful aliases and functions](sourcing-aliases.html)
+
+## Synopsis
+
+    # Assign remote repository, if it exists
+    export ANDROID_SYMBOLS_DOCKER_REGISTRY=docker.registry.host
+
+    # Our bash version is >4
+    $ sudo docker run --rm symbols envsetup | source /dev/stdin
+
+    # Stream symbols.tar.gz, incrementally store the difference
+    # inside new image layer, commit it and tag with the build's
+    # fingerprint
+    $ symbols update latest <symbols.tar.gz
+
+    # Identify the base layer for updating by its fingerprint
+    $ symbols update "fingerprint value" <symbols.tar.gz
+
+    # Get just the fingerprint for the latest update
+    $ symbols fingerprint latest
+
+    # List all available symbol files
+    $ symbols ls latest
+    $ symbols ls "fingerprint value"
+
+    # Fetch certain symbol files and stream them through tar
+    $ symbols fetch latest system/bin/adbd system/lib/libicuuc.so charger | tar xf -
+
+    # Fetch all symbols from a specific build identified by its fingerprint
+    $ symbols fetch-all "fingerprint value"
+
+    # Discover what fingerprints are available
+    $ symbols fingerprints
+
+    # Pull new symbols the remote server (if configured)
+    $ symbols pull
+
+    # Push updated symbols into the remote server (if configured)
+    $ symbols push
+
+    # Start hacking the container (launches bash shell inside a container)
+    symbols hack latest
+    # Then you use normal docker commands, because you seem to know what
+    # you are doing
+
