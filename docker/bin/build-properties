@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+BUILD_PROP=/opt/symbols/build.prop.aaaa
+
+[[ -e $BUILD_PROP ]] && cat $BUILD_PROP

@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+set -x
+
+if [[ "$1" == "" ]]
+then
+	FILES=$(ls-symbols)
+else
+	FILES="$@"
+fi
+
+# this container is removed afterwards
+OUT=$(mktemp -d)
+function cleanup
+{
+	rm -rf $OUT
+}
+trap cleanup EXIT
+
+cd /opt/symbols
+for FILE in $FILES
+do
+	mkdir -p $OUT/$(dirname $FILE)
+	cat $FILE.* >$OUT/$FILE
+done
+
+cd $OUT
+tar -cf - *

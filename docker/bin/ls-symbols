@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+
+cd opt/symbols
+find * -type f -name '*.aaaa' | sed 's?\.aaaa$??'

@@ -1,0 +1,11 @@
+## Print build identification information (from `build.prop`)
+
+`build.prop` is expected to be at the root of every symbols `.tar.gz`.
+
+The following command will print the contents of this file on STDOUT:
+
+    $ sudo docker run --rm symbols build-properties
+
+a different tag can be specified:
+
+    $ sudo docker run --rm symbols:'some other tag' build-properties

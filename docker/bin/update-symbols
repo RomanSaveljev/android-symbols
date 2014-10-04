@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -e
+set -x
+
+if [[ "$STRIP_SYMBOLS_PATH" != "" ]]
+then
+	STRIP_SYMBOLS_PATH="--strip=$STRIP_SYMBOLS_PATH"
+fi
+
+function remove_newer
+{
+	rm -rf /tmp/newer
+}
+trap remove_newer EXIT
+mkdir -p /tmp/newer
+tar xzvf - -C /tmp/newer $STRIP_SYMBOLS_PATH
+
+make -j6 -f /opt/symbols.mk -C /tmp/newer
+
+rsync --delete -rlpgoDvHAXc /tmp/newer/* /opt/symbols
+
+echo
+echo Commit this container: $(hostname)

@@ -1,0 +1,175 @@
+#!bash
+
+#set -x
+
+if [[ "$ANDROID_SYMBOLS_DOCKER_REPOSITORY" == "" ]]
+then
+	ANDROID_SYMBOLS_DOCKER_REPOSITORY=symbols
+fi
+
+if [[ "$ANDROID_SYMBOLS_DOCKER_REGISTRY" != "" ]]
+then
+	DOCKER_REPOSITORY="$ANDROID_SYMBOLS_DOCKER_REGISTRY/$ANDROID_SYMBOLS_DOCKER_REPOSITORY"
+else
+	DOCKER_REPOSITORY="$ANDROID_SYMBOLS_DOCKER_REPOSITORY"
+fi
+
+echo "Starting to work with $DOCKER_REPOSITORY"
+
+DOCKER="docker"
+
+function encode_fingerprint
+{
+	if [[ "$1" == "latest" ]]
+	then
+		echo $1
+	else
+		echo $1 | base64 -w 0
+	fi
+}
+
+function decode_fingerprint
+{
+	if [[ "$1" == "latest" ]]
+	then
+		echo $1
+	else
+		echo $1 | base64 -d -w 0
+	fi
+}
+
+function latest_fingerprint
+{
+	$DOCKER run --rm $DOCKER_REPOSITORY:latest build-properties | \
+	grep 'ro.build.fingerprint=' | \
+	awk -F= '{print $2}'
+}
+
+function symbols
+{
+	arg=$1
+	shift
+	case $arg in
+	update)
+		local base_layer=$1
+		if [[ "$base_layer" != "" ]]
+		then
+			$DOCKER run -i $DOCKER_REPOSITORY:$base_layer update-symbols
+			[[ "$?" == "0" ]] || return 1
+			local container_id=$($DOCKER ps -l | tail -1 | awk '{print $1}')
+			$DOCKER commit $container_id $DOCKER_REPOSITORY
+			local fingerprint=$(latest_fingerprint)
+			$DOCKER tag $DOCKER_REPOSITORY:latest $DOCKER_REPOSITORY:$(encode_fingerprint "$fingerprint")
+		else
+			symbols help-update
+		fi
+		;;
+	fingerprints)
+		for TAG in $($DOCKER images $DOCKER_REPOSITORY | tail -n +2 | awk '{print $2}' | grep -v 'latest')
+		do
+			decode_fingerprint $TAG
+		done
+		;;
+	ls)
+		local in=$1
+		if [[ "$in" != "" ]]
+		then
+			local tag=$(encode_fingerprint $in)
+			$DOCKER run --rm $DOCKER_REPOSITORY:$tag ls-symbols
+		else
+			symbols help-ls
+		fi
+		;;
+	fetch)
+		local from=$1
+		shift
+		if [[ "$from" != "" ]]
+		then
+			local tag=$(encode_fingerprint $from)
+			if [[ "$2" != "" ]]
+			then
+				$DOCKER run --rm $DOCKER_REPOSITORY:$tag fetch-symbols-tar "$@"
+			else
+				$DOCKER run --rm $DOCKER_REPOSITORY:$tag fetch-symbols "$1"
+			fi
+		else
+			symbols help-fetch
+		fi
+		;;
+	pull)
+		$DOCKER pull $DOCKER_REPOSITORY
+		;;
+	push)
+		$DOCKER push $DOCKER_REPOSITORY
+		;;
+	hack)
+		local what=$1
+		if [[ "$what" != "" ]]
+		then
+			if [[ "$what" == "latest" ]]
+			then
+				local tag=$what
+			else
+				local tag=$(encode_fingerprint $what)
+			fi
+			$DOCKER run -it $DOCKER_REPOSITORY:$tag bash
+		else
+			symbols help-hack
+		fi
+		;;
+	help-update)
+		cat >&2 <<EOF
+Usage: symbols update <base_fingerprint> < symbols.tar.gz
+EOF
+		return 1
+		;;
+	help-fingerprints)
+		cat >&2 <<EOF
+Usage: symbols fingerprints
+EOF
+		;;
+	help-ls)
+		cat >&2 <<EOF
+Usage: symbols ls <fingerprint>
+EOF
+		;;
+	help-fetch)
+		cat >&2 <<EOF
+Usage: symbols fetch <fingerprint> [file...]
+EOF
+		;;
+	help-pull)
+		cat >&2 <<EOF
+Usage: symbols pull
+EOF
+		;;
+	help-push)
+		cat >&2 <<EOF
+Usage: symbols push
+EOF
+		;;
+	help-hack)
+		cat >&2 <<EOF
+Usage: symbols hack
+EOF
+		;;
+	*)
+		cat <<EOF
+Usage: symbols [help|update|fingerprints|ls|fetch|pull|push|hack]
+More help on each command is available as 'symbols help-command'
+
+	help         - Print this message
+	update       - Store new symbols incrementally
+	fingerprints - Print all available fingerprints
+	ls           - List available symbols for a
+		       fingerprint
+	fetch        - Download specific symbols in a
+		       tar archive or as a single file
+	pull         - Pull updates from the remote server
+	push         - Push updates to the remote server
+	hack         - Get a shell access
+EOF
+		return 1
+		;;
+	esac
+}

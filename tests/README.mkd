@@ -1,0 +1,7 @@
+## Requirements
+
+* [BATS](https://github.com/sstephenson/bats) framework installed
+
+## How to run tests
+
+    ./test.sh

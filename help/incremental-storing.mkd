@@ -1,0 +1,14 @@
+## Incrementally store new symbols package (in .tar.gz format) and commit it as a new image
+
+A `.tar.gz` archive having appropriate format can be incrementally stored to a new container
+and commited with appropriate tag.
+
+### What does "appropriate `tar gz` archive" mean?
+
+**TODO:** write it up
+
+## Storing symbols
+
+    # update-symbols command exists just for that
+    $ cat archive.tar.gz | sudo docker run -i symbols update-symbols
+    # if the process was succesful, a new container can be committed
