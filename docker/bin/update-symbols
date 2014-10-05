@@ -18,7 +18,8 @@ tar xzvf - -C /tmp/newer $STRIP_SYMBOLS_PATH
 
 make -j6 -f /opt/symbols.mk -C /tmp/newer
 
-rsync --delete -rlpgoDvHAXc /tmp/newer/* /opt/symbols
+cd /tmp/newer
+rsync --del -rlpgoDvHAXc . /opt/symbols
 
 echo
 echo Commit this container: $(hostname)

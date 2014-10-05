@@ -42,7 +42,7 @@ load $BATS_TEST_DIRNAME/../setup_teardown
 	run symbols ls recursive
 	[[ "$status" -eq 0 ]]
 	[[ "${#lines[@]}" -eq 2 ]]
-	for line in $lines
+	for line in ${lines[@]}
 	do
 		[[ "$line" == "build.prop" || $line == "a/b/c/d/e/f/g/file" ]]
 	done
