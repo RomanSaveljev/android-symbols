@@ -13,6 +13,7 @@ load $BATS_TEST_DIRNAME/../setup_teardown
 	symbols update latest < <(tar czvf - -C $files_path .)
 	run symbols ls latest
 	[[ "$status" -eq 0 ]]
+	[[ "${#lines[@]}" -eq 4 ]]
 	for name in $output
 	do
 		echo $name
@@ -31,4 +32,18 @@ load $BATS_TEST_DIRNAME/../setup_teardown
 @test "ls for wrong layer id returns error" {
 	run symbols ls dsfsdfsdf
 	[[ "$status" -ne 0 ]]
+}
+
+@test "ls prints everything recursively" {
+	echo "ro.build.fingerprint=recursive" >$BATS_TMPDIR/build.prop
+	mkdir -p $BATS_TMPDIR/a/b/c/d/e/f/g
+	touch $BATS_TMPDIR/a/b/c/d/e/f/g/file
+	symbols update latest < <(tar czvf - -C $BATS_TMPDIR build.prop a/b/c/d/e/f/g/file)
+	run symbols ls recursive
+	[[ "$status" -eq 0 ]]
+	[[ "${#lines[@]}" -eq 2 ]]
+	for line in $lines
+	do
+		[[ "$line" == "build.prop" || $line == "a/b/c/d/e/f/g/file" ]]
+	done
 }

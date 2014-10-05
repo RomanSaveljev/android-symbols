@@ -2,5 +2,5 @@
 
 set -e
 
-cd opt/symbols
+cd /opt/symbols
 find * -type f -name '*.aaaa' | sed 's?\.aaaa$??'
