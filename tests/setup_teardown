@@ -1,0 +1,13 @@
+#!bash
+
+function setup {
+	docker build -t $ANDROID_SYMBOLS_DOCKER_REPOSITORY .
+	. <(docker run --rm symbols-bats envsetup)
+}
+
+function teardown {
+	docker ps -q | xargs --no-run-if-empty docker stop
+	docker ps -qa | xargs --no-run-if-empty docker rm
+	docker images -q $ANDROID_SYMBOLS_DOCKER_REPOSITORY | sort | uniq | xargs --no-run-if-empty docker rmi -f
+}
+

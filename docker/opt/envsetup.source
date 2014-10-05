@@ -54,7 +54,7 @@ function symbols
 		local base_layer=$1
 		if [[ "$base_layer" != "" ]]
 		then
-			$DOCKER run -i $DOCKER_REPOSITORY:$base_layer update-symbols
+			$DOCKER run -i $DOCKER_REPOSITORY:$(encode_fingerprint $base_layer) update-symbols
 			[[ "$?" == "0" ]] || return 1
 			local container_id=$($DOCKER ps -l | tail -1 | awk '{print $1}')
 			$DOCKER commit $container_id $DOCKER_REPOSITORY

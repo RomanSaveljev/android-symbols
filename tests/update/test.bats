@@ -1,22 +1,9 @@
 #!/usr/bin/env bats
 
 ANDROID_SYMBOLS_DOCKER_REPOSITORY=symbols-update
-
-function setup {
-	docker build -t symbols-bats $BATS_TEST_DIRNAME/../..
-	docker build -t $ANDROID_SYMBOLS_DOCKER_REPOSITORY .
-	. <(docker run --rm symbols-bats envsetup)
-}
-
-function teardown {
-	docker ps -q | xargs --no-run-if-empty docker stop
-	docker ps -qa | xargs --no-run-if-empty docker rm
-	docker images -q $ANDROID_SYMBOLS_DOCKER_REPOSITORY | xargs --no-run-if-empty docker rmi -f
-	docker images -q symbols-bats | xargs --no-run-if-empty docker rmi -f
-}
+load $BATS_TEST_DIRNAME/../setup_teardown
 
 @test "First batch of symbols is stored" {
-	skip
 	local files_path=$(mktemp -d -p $BATS_TMPDIR)
 	mkdir -p $files_path
 	echo "ro.build.fingerprint=my-great-fingerprint" >$files_path/build.prop
@@ -48,4 +35,25 @@ function teardown {
 }
 
 @test "Update fails, if wrong base layer is selected" {
+	echo "ro.build.fingerprint=my-great-fingerprint" >$BATS_TMPDIR/build.prop
+	run symbols update asdasdasd < <(tar czvf - -C $files_path $BATS_TMPDIR/build.prop)
+	[[ "$status" -ne 0 ]]
 }
+
+@test "Update another layer" {
+	echo "ro.build.fingerprint=first" >$BATS_TMPDIR/build.prop
+	symbols update latest < <(tar czvf - -C $BATS_TMPDIR build.prop)
+	echo "ro.build.fingerprint=second" >$BATS_TMPDIR/build.prop
+	symbols update first < <(tar czvf - -C $BATS_TMPDIR build.prop)
+	echo "ro.build.fingerprint=third" >$BATS_TMPDIR/build.prop
+	symbols update first < <(tar czvf - -C $BATS_TMPDIR build.prop)
+}
+
+@test "Update same layer" {
+	echo "ro.build.fingerprint=same" >$BATS_TMPDIR/build.prop
+	touch $BATS_TMPDIR/first
+	symbols update latest < <(tar czvf - -C $BATS_TMPDIR build.prop first)
+	symbols update same < <(tar czvf - -C $BATS_TMPDIR build.prop first)
+	symbols update same < <(tar czvf - -C $BATS_TMPDIR build.prop first)
+}
+
