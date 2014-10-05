@@ -1,24 +1,19 @@
-#!bash
-
-function setup {
-	docker build -t symbols-bats $BATS_TEST_DIRNAME/../..
-}
-
-function teardown {
-	docker images -q symbols-bats | xargs docker rmi -f
-}
+#!/usr/bin/env bats
 
 @test "envsetup prints script" {
-	skip
 	run docker run --rm symbols-bats envsetup
-	[ "$output" != "" ]
+	[[ "$status" -eq 0 ]]
+	[[ "$output" != "" ]]
+	local tmp=$(mktemp -p $BATS_TMPDIR)
+	docker run --rm symbols-bats envsetup >$tmp
+	diff $tmp $BATS_TEST_DIRNAME/../../docker/opt/envsetup.source
 }
 
 @test "symbols function prints help" {
 	source <(docker run --rm symbols-bats envsetup)
 	run symbols
 	echo $output
-	[ "$status" -eq 0 ]
-	[ "$output" != "" ]
+	[[ "$status" -ne 0 ]]
+	[[ "$output" != "" ]]
 }
 
