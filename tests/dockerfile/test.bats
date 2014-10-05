@@ -6,5 +6,5 @@ function setup {
 
 @test "symbols dockerfile returns template Dockerfile" {
 	symbols dockerfile > >(tee $BATS_TMPDIR/symbols_dockerfile)
-	diff $BATS_TMPDIR/symbols_dockerfile ../../docker/opt/Dockerfile
+	diff $BATS_TMPDIR/symbols_dockerfile $BATS_TEST_DIRNAME/../../docker/opt/Dockerfile
 }
