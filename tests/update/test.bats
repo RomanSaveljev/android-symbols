@@ -63,7 +63,7 @@ load $BATS_TEST_DIRNAME/../setup_teardown
 	symbols update latest < <(tar czf - -C $BATS_TMPDIR build.prop first)
 	dd if=/dev/zero of=$BATS_TMPDIR/second bs=100 count=1
 	symbols update delete-missing < <(tar czf - -C $BATS_TMPDIR build.prop second)
-	run symbols ls latest
+	run symbols ls delete-missing
 	[[ "$status" -eq 0 ]]
 	for line in ${lines[@]}
 	do
@@ -87,3 +87,18 @@ load $BATS_TEST_DIRNAME/../setup_teardown
 	done
 	[[ "${#lines[@]}" -eq 2 ]]
 }
+
+@test "Latest layer has the latest changes" {
+	echo "ro.build.fingerprint=the-latest" >$BATS_TMPDIR/build.prop
+	mkdir -p $BATS_TMPDIR/a/b/c
+	echo 123 >$BATS_TMPDIR/a/b/c/file
+	symbols update latest < <(tar czf - -C $BATS_TMPDIR build.prop a/b/c/file)
+	symbols ls latest > >(tee $BATS_TMPDIR/first-update-ls)
+	mkdir -p $BATS_TMPDIR/d/e/f
+	echo 123 >$BATS_TMPDIR/d/e/f/file
+	symbols update the-latest < <(tar czf - -C $BATS_TMPDIR build.prop d/e/f/file)
+	symbols ls latest > >(tee $BATS_TMPDIR/second-update-ls)
+	run diff $BATS_TMPDIR/first-update-ls $BATS_TMPDIR/second-update-ls
+	[[ "$status" -ne 0 ]]
+}
+
