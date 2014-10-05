@@ -1,7 +1,7 @@
 #!bash
 
 function setup {
-	docker build -t $ANDROID_SYMBOLS_DOCKER_REPOSITORY .
+	docker build -t $ANDROID_SYMBOLS_DOCKER_REPOSITORY $BATS_TEST_DIRNAME
 	. <(docker run --rm symbols-bats envsetup)
 }
 

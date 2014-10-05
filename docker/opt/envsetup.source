@@ -62,6 +62,7 @@ function symbols
 			$DOCKER tag $DOCKER_REPOSITORY:latest $DOCKER_REPOSITORY:$(encode_fingerprint "$fingerprint")
 		else
 			symbols help-update
+			return 1
 		fi
 		;;
 	fingerprints)
@@ -78,6 +79,7 @@ function symbols
 			$DOCKER run --rm $DOCKER_REPOSITORY:$tag ls-symbols
 		else
 			symbols help-ls
+			return 1
 		fi
 		;;
 	fetch)
@@ -94,6 +96,7 @@ function symbols
 			fi
 		else
 			symbols help-fetch
+			return 1
 		fi
 		;;
 	pull)
@@ -115,13 +118,13 @@ function symbols
 			$DOCKER run -it $DOCKER_REPOSITORY:$tag bash
 		else
 			symbols help-hack
+			return 1
 		fi
 		;;
 	help-update)
 		cat >&2 <<EOF
 Usage: symbols update <base_fingerprint> < symbols.tar.gz
 EOF
-		return 1
 		;;
 	help-fingerprints)
 		cat >&2 <<EOF
@@ -153,7 +156,7 @@ EOF
 Usage: symbols hack
 EOF
 		;;
-	*)
+	help)
 		cat <<EOF
 Usage: symbols [help|update|fingerprints|ls|fetch|pull|push|hack]
 More help on each command is available as 'symbols help-command'
@@ -169,6 +172,9 @@ More help on each command is available as 'symbols help-command'
 	push         - Push updates to the remote server
 	hack         - Get a shell access
 EOF
+		;;
+	*)
+		symbols help
 		return 1
 		;;
 	esac

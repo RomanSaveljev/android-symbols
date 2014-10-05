@@ -11,5 +11,5 @@ function teardown {
 
 @test "Customized image builds" {
 	local tmp=$(mktemp -p $BATS_TMPDIR)
-	docker build -t symbols-customized .
+	docker build -t symbols-customized $BATS_TEST_DIRNAME
 }

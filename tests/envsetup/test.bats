@@ -9,11 +9,9 @@
 	diff $tmp $BATS_TEST_DIRNAME/../../docker/opt/envsetup.source
 }
 
-@test "symbols function prints help" {
+@test "symbols without command returns error" {
 	source <(docker run --rm symbols-bats envsetup)
 	run symbols
-	echo $output
 	[[ "$status" -ne 0 ]]
-	[[ "$output" != "" ]]
 }
 
