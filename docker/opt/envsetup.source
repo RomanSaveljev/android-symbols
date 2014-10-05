@@ -121,6 +121,9 @@ function symbols
 			return 1
 		fi
 		;;
+	dockerfile)
+		$DOCKER run --rm $DOCKER_REPOSITORY:latest cat /opt/Dockerfile
+		;;
 	help-update)
 		cat >&2 <<EOF
 Usage: symbols update <base_fingerprint> < symbols.tar.gz
@@ -154,6 +157,11 @@ EOF
 	help-hack)
 		cat >&2 <<EOF
 Usage: symbols hack
+EOF
+		;;
+	help-dockerfile)
+		cat >&2 <<EOF
+Usage symbols dockerfile
 EOF
 		;;
 	help)

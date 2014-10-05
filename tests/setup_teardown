@@ -2,7 +2,7 @@
 
 function setup {
 	docker build -t $ANDROID_SYMBOLS_DOCKER_REPOSITORY $BATS_TEST_DIRNAME
-	. <(docker run --rm symbols-bats envsetup)
+	. <(docker run --rm $ANDROID_SYMBOLS_DOCKER_REPOSITORY envsetup)
 }
 
 function teardown {

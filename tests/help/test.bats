@@ -45,6 +45,12 @@ load $BATS_TEST_DIRNAME/../setup_teardown
 	[[ "$output" != "" ]]
 }
 
+@test "symbols help-dockerfile" {
+	run symbols help-dockerfile
+	[[ "$status" -eq 0 ]]
+	[[ "$output" != "" ]]
+}
+
 @test "symbols help" {
 	run symbols help
 	[[ "$status" -eq 0 ]]
