@@ -88,12 +88,7 @@ function symbols
 		if [[ "$from" != "" ]]
 		then
 			local tag=$(encode_fingerprint $from)
-			if [[ "$2" != "" ]]
-			then
-				$DOCKER run --rm $DOCKER_REPOSITORY:$tag fetch-symbols-tar "$@"
-			else
-				$DOCKER run --rm $DOCKER_REPOSITORY:$tag fetch-symbols "$1"
-			fi
+			$DOCKER run --rm $DOCKER_REPOSITORY:$tag fetch-symbols-tar "$@"
 		else
 			symbols help-fetch
 			return 1
