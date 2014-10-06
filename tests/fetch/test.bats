@@ -36,3 +36,13 @@ load $BATS_TEST_DIRNAME/../setup_teardown
 	[[ -e $tmp_dest/build.prop ]]
 }
 
+@test "fetch preserves file contents" {
+	echo "ro.build.fingerprint=all-files" >$BATS_TMPDIR/build.prop
+	local tmp=$(mktemp -p $BATS_TMPDIR)
+	head -c 18M /dev/urandom | base64 >$tmp
+	symbols update latest < <(tar czf - -C $BATS_TMPDIR build.prop $(basename $tmp))
+	local tmp_dest=$(mktemp -p $BATS_TMPDIR -d)
+	symbols fetch latest $(basename $tmp) > >(tar xvf - -C $tmp_dest)
+	diff $tmp $tmp_dest/$(basename $tmp)
+}
+
