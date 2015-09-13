@@ -1,4 +1,4 @@
-package transmitter
+package main
 
 import (
 	"crypto/md5"
