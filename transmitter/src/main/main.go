@@ -4,6 +4,7 @@ import (
     "flag"
     "fmt"
     "net/rpc"
+    "log"
 )
 
 const APP_VERSION = "0.0.1"
@@ -12,7 +13,7 @@ const APP_VERSION = "0.0.1"
 var versionFlag *bool = flag.Bool("v", false, "Print the version number.")
 
 func main() {
-    flag.Parse() // Scan the arguments list 
+    //flag.Parse() // Scan the arguments list 
 
     if *versionFlag {
         fmt.Println("Version:", APP_VERSION)
@@ -20,8 +21,10 @@ func main() {
     
     //rest := flag.Args()
     
-    transport := NewTransport()
-    client := rpc.NewClient(transport)
+    var tr transport
+    log.Println("transport created")
+    client := rpc.NewClient(&tr)
+    log.Println("client created")
     client.Call("hello", true, false)
 }
 

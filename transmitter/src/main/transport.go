@@ -2,28 +2,20 @@ package main
 
 import (
 	"os"
-	"bufio"
-	"io"
+	"log"
 )
 
 type transport struct {
-	stdin io.Reader
-	stdout io.Writer
-}
-
-func NewTransport() io.ReadWriteCloser {
-	var tr transport
-	tr.stdin = bufio.NewReader(os.Stdin)
-	tr.stdout = bufio.NewWriter(os.Stdout)
-	return &tr
 }
 
 func (this *transport) Read(p []byte) (n int, err error) {
-	return this.stdin.Read(p)
+	log.Println("transport read")
+	return os.Stdin.Read(p)
 }
 
 func (this *transport) Write(p []byte) (n int, err error) {
-	return this.stdout.Write(p)
+	log.Println("transport write: %v", p)
+	return os.Stdout.Write(p)
 }
 
 func (this *transport) Close() error {
