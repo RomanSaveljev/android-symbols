@@ -10,7 +10,7 @@ func TestEncoderWriteByte(t *testing.T) {
 	var b bytes.Buffer
 	enc := newEncoder(&b)
 	err := enc.Write(1)
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 }
 
 func TestEncoderWriteOne(t *testing.T) {
@@ -48,7 +48,7 @@ func TestEncoderWriteBytes(t *testing.T) {
 	enc.Write('c')
 	enc.Write('d')
 	err := enc.Close()
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 	assert.Equal(t, []byte("@:E_W\n"), b.Bytes())
 }
 
@@ -56,7 +56,7 @@ func TestEncoderWriteSignature(t *testing.T) {
 	var b bytes.Buffer
 	enc := newEncoder(&b)
 	err := enc.WriteSignature(0xdeadbeef, "abcdef012345678")
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 	enc.Close()
 	assert.Equal(t, "\tdeadbeef/abcdef012345678\n", string(b.Bytes()))
 }

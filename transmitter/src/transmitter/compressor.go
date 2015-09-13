@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"log"
 	"sort"
 )
 
@@ -16,47 +17,60 @@ import (
 type compressor struct {
 	buffer     []byte
 	enc        *encoder
-	signatures Signatures
+	signatures *Signatures
 }
 
-func NewTransmitter(signatures Signatures, bufferSize uint, destination io.Writer) io.WriteCloser {
+func NewCompressor(signatures *Signatures, bufferSize uint, destination io.Writer) io.WriteCloser {
 	var tx compressor
-	tx.buffer = make([]byte, bufferSize)
+	tx.buffer = make([]byte, 0, bufferSize)
 	tx.enc = newEncoder(destination)
 	tx.signatures = signatures
 	return &tx
 }
 
-func (this *compressor) writeFirstAndAppend(p byte) error {
+func (this *compressor) writeFirst() error {
 	err := this.enc.Write(this.buffer[0])
 	if err == nil {
-		this.buffer = append(this.buffer[1:], p)
+		buffer := make([]byte, len(this.buffer) - 1, cap(this.buffer))
+		copy(buffer, this.buffer[1:])
+		this.buffer = buffer
 	}
 	return err
 }
 
-func (this *compressor) writeSignatureAndAppend(rolling uint32, signature string, p byte) error {
+func (this *compressor) writeSignature(rolling uint32, signature string) error {
+	log.Println("writeSignature")
 	err := this.enc.WriteSignature(rolling, signature)
 	if err == nil {
-		this.buffer = []byte{p}
+		this.buffer = make([]byte, 0, cap(this.buffer))
+		log.Printf("new cap=%d", cap(this.buffer))
 	}
 	return err
 }
 
 func (this *compressor) writeOne(p byte) (err error) {
+	log.Println("WriteOne")
 	this.buffer = append(this.buffer, p)
+	log.Printf("cap = %d len = %d", cap(this.buffer), len(this.buffer))
 	if len(this.buffer) == cap(this.buffer) {
+		log.Println("len reached cap and buf=%s", string(this.buffer))
 		rolling := crc32.ChecksumIEEE(this.buffer)
+		log.Printf("crc=%x", rolling)
 		candidates := this.signatures.Get(rolling)
+		log.Printf("candidates len=%d", len(candidates))
 		if len(candidates) == 0 {
-			err = this.writeFirstAndAppend(p)
+			log.Println("rolling checksum not found")
+			err = this.writeFirst()
 		} else {
 			strong := fmt.Sprintf("%x", md5.Sum(this.buffer))
-			idx := sort.SearchStrings(candidates, strong)
-			if idx == -1 {
-				err = this.writeFirstAndAppend(p)
+			log.Printf("strong=%s", strong)
+			idx := sort.Search(len(candidates), func (i int) bool {return strong == candidates[i]})
+			log.Printf("idx=%d", idx)
+			if idx == len(candidates) {
+				log.Println("strong signature not found")
+				err = this.writeFirst()
 			} else {
-				err = this.writeSignatureAndAppend(rolling, candidates[idx], p)
+				err = this.writeSignature(rolling, candidates[idx])
 			}
 		}
 	}
@@ -73,6 +87,7 @@ func (this *compressor) Write(p []byte) (n int, err error) {
 
 func (this *compressor) Close() error {
 	var err error
+	log.Printf("Close len=%d buffer=%s", len(this.buffer), this.buffer)
 	for i := 0; i < len(this.buffer) && err == nil; i++ {
 		err = this.enc.Write(this.buffer[i])
 	}
