@@ -5,6 +5,7 @@ import (
     "fmt"
     "net/rpc"
     "log"
+    "github.com/RomanSaveljev/android-symbols/shared/src/shared"
 )
 
 const APP_VERSION = "0.0.1"
@@ -21,7 +22,7 @@ func main() {
     
     //rest := flag.Args()
     
-    var tr transport
+    var tr shared.Transport
     log.Println("transport created")
     client := rpc.NewClient(&tr)
     log.Println("client created")
