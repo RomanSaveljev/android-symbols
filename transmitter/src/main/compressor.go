@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"sort"
+	"github.com/RomanSaveljev/android-symbols/shared/src/shared"
 )
 
 // Takes a list of signatures and produces a stream of literal bytes
@@ -17,10 +18,10 @@ import (
 type compressor struct {
 	buffer     []byte
 	enc        *encoder
-	signatures *Signatures
+	signatures *shared.Signatures
 }
 
-func NewCompressor(signatures *Signatures, bufferSize uint, destination io.Writer) io.WriteCloser {
+func NewCompressor(signatures *shared.Signatures, bufferSize uint, destination io.Writer) io.WriteCloser {
 	var tx compressor
 	tx.buffer = make([]byte, 0, bufferSize)
 	tx.enc = newEncoder(destination)
