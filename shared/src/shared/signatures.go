@@ -6,15 +6,15 @@ import (
 
 // Signatures collection is arranged by
 type Signatures struct {
-	collection map[uint32][]string
+	collection map[string][]string
 }
 
 func NewSignatures() *Signatures {
-	signatures := Signatures{make(map[uint32][]string)}
+	signatures := Signatures{make(map[string][]string)}
 	return &signatures
 }
 
-func (this *Signatures) Add(rolling uint32, sig string) {
+func (this *Signatures) Add(rolling string, sig string) {
 	_, exists := this.collection[rolling]
 	if !exists {
 		existing := make([]string, 0, 1)
@@ -26,7 +26,7 @@ func (this *Signatures) Add(rolling uint32, sig string) {
 	}
 }
 
-func (this *Signatures) Get(rolling uint32) []string {
+func (this *Signatures) Get(rolling string) []string {
 	existing, exists := this.collection[rolling]
 	if !exists {
 		existing = []string{}
