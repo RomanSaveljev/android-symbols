@@ -1,6 +1,10 @@
 package main 
 
+import (
+	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+)
+
 func main() {
 	var tr transport
-	RunSynchronizerService(&tr)
+	receiver.RunSynchronizerService(&tr)
 }

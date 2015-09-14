@@ -1,4 +1,4 @@
-package main
+package receiver
 
 import (
 	"github.com/RomanSaveljev/android-symbols/shared/src/shared"
@@ -14,7 +14,7 @@ type File struct {
 func NewFile(pathName string) (*File, error) {
 	var f File
 	f.pathName = pathName
-	err := os.MkdirAll(pathName, os.ModeDir)
+	err := os.MkdirAll(pathName, os.ModeDir|os.ModePerm)
 	return &f, err
 }
 

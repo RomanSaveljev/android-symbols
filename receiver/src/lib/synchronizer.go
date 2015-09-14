@@ -1,7 +1,8 @@
-package main
+package receiver
 
 import (
 	"net/rpc"
+	"io"
 )
 
 type Synchronizer int
@@ -15,10 +16,10 @@ func (this *Synchronizer) StartFile(filePath string, token *string) error {
 	return err
 }
 
-func RunSynchronizerService(tr *transport) error {
+func RunSynchronizerService(link io.ReadWriteCloser) error {
 	err := rpc.Register(new(Synchronizer))
 	if err == nil {
-		rpc.ServeConn(tr)
+		rpc.ServeConn(link)
 	}
 	return err
 }
