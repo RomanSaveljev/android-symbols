@@ -76,7 +76,7 @@ func (this *File) nextSignature() (signature Signature, err error) {
 		// skip everything besides directories
 		next := (*this.rollingDirs)[1:]
 		this.rollingDirs = &next
-		return this.nextSignature()		
+		return this.nextSignature()
 	} else if this.strongFiles == nil {
 		// entered a rolling directory - scan strong signatures
 		entry := (*this.rollingDirs)[0]
@@ -84,7 +84,7 @@ func (this *File) nextSignature() (signature Signature, err error) {
 			this.strongFiles = &entries
 			return this.nextSignature()
 		}
-	} else if len(*this.strongFiles) == 0{
+	} else if len(*this.strongFiles) == 0 {
 		// all strong signatures listed
 		this.strongFiles = nil
 		next := (*this.rollingDirs)[1:]
@@ -108,10 +108,14 @@ func (this *File) StartStream(dummy int, token *string) (err error) {
 	return err
 }
 
-func (this *File) SaveChunk(chunk Chunk, dummy *int) (err error) {
+func (this *File) SaveChunk(chunk Chunk, dummy *int) error {
+	return this.saveChunk(&chunk)
+}
+
+func (this *File) saveChunk(chunk *Chunk) (err error) {
 	rollingPath := path.Join(this.pathName, chunk.Rolling)
 	if err = this.worker.MkdirAll(rollingPath); err == nil {
-		
+		err = this.worker.WriteFile(path.Join(rollingPath, chunk.Strong), chunk.data[:])
 	}
 	return
 }

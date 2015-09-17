@@ -1,16 +1,15 @@
 package receiver
 
 import (
-    "testing"
-    "io"
-    "io/ioutil"
-    "github.com/stretchr/testify/assert"
-    "net/rpc"
-    "path"
-    //"log"
-    "os"
-    "fmt"
-    "github.com/RomanSaveljev/android-symbols/shared/src/shared"
+	"github.com/stretchr/testify/assert"
+	"io"
+	"io/ioutil"
+	"net/rpc"
+	"path"
+	"testing"
+	//"log"
+	"fmt"
+	"os"
 )
 
 type pipePair struct {
@@ -33,17 +32,17 @@ func (this *pipePair) Close() error {
 }
 
 type context struct {
-	t *testing.T
-	in pipePair
-	out pipePair
-	client *rpc.Client
+	assert     *assert.Assertions
+	in         pipePair
+	out        pipePair
+	client     *rpc.Client
 	baseFolder string
 }
 
 func (this *context) createBaseFolder() {
 	var err error
 	this.baseFolder, err = ioutil.TempDir("", "test_")
-	assert.Equal(this.t, nil, err)	
+	this.assert.NoError(err)
 }
 
 func (this *context) createServer() {
@@ -57,46 +56,92 @@ func (this *context) createServer() {
 func (this *context) startFile(name string) (pathname string, token string) {
 	pathname = path.Join(this.baseFolder, name)
 	err := this.client.Call("Synchronizer.StartFile", pathname, &token)
-	assert.Equal(this.t, nil, err)
+	this.assert.NoError(err)
 	return
 }
 
-func (this *context) getSignatures(token string) *shared.Signatures {
-	signatures := shared.NewSignatures()
-	err := this.client.Call(fmt.Sprint(token, ".Signatures"), signatures, signatures)
-	assert.Nil(this.t, err)
-	return signatures
+func (this *context) nextSignature(token string) Signature {
+	var signature Signature
+	err := this.client.Call(fmt.Sprint(token, ".NextSignature"), 0, &signature)
+	this.assert.NoError(err)
+	return signature
+}
+
+func (this *context) startStream(token string) string {
+	var stream string
+	err := this.client.Call(fmt.Sprint(token, ".StartStream"), 0, &stream)
+	this.assert.NoError(err)
+	return stream
+}
+
+func (this *context) writeStream(token string, data []byte) {
+	var n int
+	err := this.client.Call(fmt.Sprint(token, ".Write"), data, &n)
+	this.assert.NoError(err)
+	this.assert.Equal(len(data), n)
+}
+
+func (this *context) closeStream(token string) {
+	err := this.client.Call(fmt.Sprint(token, ".Close"), 0, nil)
+	this.assert.NoError(err)
 }
 
 func TestSynchronizerStartFile(t *testing.T) {
-	var ctx context
-	ctx.t = t
+	assert := assert.New(t)
+	ctx := context{assert: assert}
 	ctx.createBaseFolder()
 	ctx.createServer()
+	defer ctx.client.Close()
 	pathname, token := ctx.startFile("test")
 	_, err := os.Stat(pathname)
-	assert.False(t, os.IsNotExist(err))
-	assert.NotEqual(t, 0, len(token))
+	assert.False(os.IsNotExist(err))
+	assert.NotEqual(0, len(token))
+}
+
+func TestSynchronizerFileNextSignature(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context{assert: assert}
+	ctx.createBaseFolder()
+
+	sigPath := path.Join(ctx.baseFolder, "test", "ffffeeee")
+	err := os.MkdirAll(sigPath, os.ModeDir|os.ModePerm)
+	assert.NoError(err)
+	err = ioutil.WriteFile(path.Join(sigPath, "6a900ff954cc07f2ea7b0fa2b862c480"), []byte("123"), os.ModePerm)
+	assert.NoError(err)
+
+	ctx.createServer()
+	defer ctx.client.Close()
+	_, token := ctx.startFile("test")
+	signature := ctx.nextSignature(token)
+	assert.Equal("ffffeeee", signature.Rolling)
+	assert.Equal("6a900ff954cc07f2ea7b0fa2b862c480", signature.Strong)
 	ctx.client.Close()
 }
 
-func TestSynchronizerFileSignatures(t *testing.T) {
-	var ctx context
-	ctx.t = t
+func TestSynchronizerFileStartStream(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context{assert: assert}
 	ctx.createBaseFolder()
-	sigPath := path.Join(ctx.baseFolder, "test", "ffffeeee")
-	err := os.MkdirAll(sigPath, os.ModeDir|os.ModePerm)
-	assert.Equal(t, nil, err)
-	err = ioutil.WriteFile(path.Join(sigPath, "6a900ff954cc07f2ea7b0fa2b862c480"), []byte("123"), os.ModePerm)
-	assert.Equal(t, nil, err)
-	err = ioutil.WriteFile(path.Join(sigPath, "449448c6292cfab8fd2038c65a2727a9"), []byte("456"), os.ModePerm)
-	assert.Nil(t, err)
 	ctx.createServer()
-	_, token := ctx.startFile("test")
-	signatures := ctx.getSignatures(token)
-	strong := signatures.Get("ffffeeee")
-	assert.Equal(t, 2, len(strong))
-	assert.Contains(t, strong, "6a900ff954cc07f2ea7b0fa2b862c480")
-	assert.Contains(t, strong, "449448c6292cfab8fd2038c65a2727a9")
-	ctx.client.Close()
+	defer ctx.client.Close()
+	pathname, token := ctx.startFile("test")
+	stream := ctx.startStream(token)
+	_, err := os.Stat(path.Join(pathname, "stream"))
+	assert.False(os.IsNotExist(err))
+	assert.NotEqual(0, len(stream))
+}
+
+func TestSynchronizerWriteStream(t *testing.T) {
+	assert := assert.New(t)
+	ctx := context{assert: assert}
+	ctx.createBaseFolder()
+	ctx.createServer()
+	defer ctx.client.Close()
+	pathname, token := ctx.startFile("test")
+	stream := ctx.startStream(token)
+	ctx.writeStream(stream, []byte("123456"))
+	ctx.closeStream(stream)
+	data, err := ioutil.ReadFile(path.Join(pathname, "stream"))
+	assert.NoError(err)
+	assert.Equal([]byte("123456"), data)
 }

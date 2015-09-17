@@ -1,6 +1,7 @@
 package receiver
 
 import (
+	"crypto/rand"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -37,6 +38,7 @@ func TestFileNextSignature(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mock := NewMockfileSystemWorker(mockCtrl)
+	mock.EXPECT().IsDir(gomock.Any()).AnyTimes().Return(true)
 	mkdirAll := mock.EXPECT().MkdirAll("/a/b/c/d.txt").Return(nil)
 	rolling := []string{"abc", "123"}
 	readRolling := mock.EXPECT().Readdirnames("/a/b/c/d.txt").After(mkdirAll).Return(rolling, nil)
@@ -79,4 +81,26 @@ func TestFileNextSignatureOnlyDirs(t *testing.T) {
 	assert.NotNil(file)
 	_, err = file.nextSignature()
 	assert.Error(err)
+}
+
+func TestFileSaveChunk(t *testing.T) {
+	assert := assert.New(t)
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var chunk Chunk
+	chunk.Rolling = "abc"
+	chunk.Strong = "def"
+	rand.Read(chunk.data[:])
+
+	mock := NewMockfileSystemWorker(mockCtrl)
+	mock.EXPECT().MkdirAll("/a/b/c/d.txt").Return(nil)
+	mkdirAll := mock.EXPECT().MkdirAll("/a/b/c/d.txt/abc").Return(nil)
+	mock.EXPECT().WriteFile("/a/b/c/d.txt/abc/def", chunk.data[:]).After(mkdirAll).Return(nil)
+
+	file, err := newFileInjected("/a/b/c/d.txt", mock)
+	assert.NotNil(file)
+	err = file.saveChunk(&chunk)
+	assert.NoError(err)
 }

@@ -2,7 +2,6 @@ package receiver
 
 import (
 	"os"
-	"github.com/RomanSaveljev/android-symbols/shared/src/shared"
 	"io"
 )
 
@@ -22,8 +21,7 @@ func (this *Stream) Write(data []byte, n *int) (err error) {
 	return err
 }
 
-func (this *Stream) CloseAndOptimize(dummy int, signatures *shared.Signatures) error {
+func (this *Stream) Close(dummy int, nothing *int) error {
 	err := this.stream.Close()
-	// TODO: optimize and collect new signatures
 	return err
 }
