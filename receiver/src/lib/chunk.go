@@ -1,10 +1,8 @@
 package receiver
 
-import (
-
-)
+const CHUNK_SIZE = 4096
 
 type Chunk struct {
 	Signature
-	data [4096]byte
+	data [CHUNK_SIZE]byte
 }
