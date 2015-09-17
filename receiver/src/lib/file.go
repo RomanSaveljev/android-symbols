@@ -4,7 +4,6 @@ package receiver
 
 import (
 	"io"
-	"log"
 	"net/rpc"
 	"os"
 	"path"
@@ -13,6 +12,8 @@ import (
 type fileSystemWorker interface {
 	Readdirnames(at string) ([]string, error)
 	MkdirAll(pathName string) error
+	IsDir(pathName string) bool
+	WriteFile(pathName string, data []byte) error
 }
 
 type realFileSystemWorker struct {
@@ -30,6 +31,13 @@ func (this realFileSystemWorker) Readdirnames(at string) (entries []string, err 
 
 func (this realFileSystemWorker) MkdirAll(pathName string) error {
 	return os.MkdirAll(pathName, os.ModeDir|os.ModePerm)
+}
+
+func (this realFileSystemWorker) IsDir(pathName string) bool {
+	if info, err := os.Stat(pathName); err == nil {
+		return info.IsDir()
+	}
+	return false
 }
 
 type File struct {
@@ -57,24 +65,26 @@ func (this *File) NextSignature(dummy int, signature *Signature) (err error) {
 func (this *File) nextSignature() (signature Signature, err error) {
 	if this.rollingDirs == nil {
 		// lets begin
-		log.Println("beginning")
 		if entries, err := this.worker.Readdirnames(this.pathName); err == nil {
-			log.Printf("%v", entries)
 			this.rollingDirs = &entries
 			return this.nextSignature()
 		}
 	} else if len(*this.rollingDirs) == 0 {
 		// all rolling directories scanned
 		err = io.EOF
+	} else if !this.worker.IsDir(path.Join(this.pathName, (*this.rollingDirs)[0])) {
+		// skip everything besides directories
+		next := (*this.rollingDirs)[1:]
+		this.rollingDirs = &next
+		return this.nextSignature()		
 	} else if this.strongFiles == nil {
 		// entered a rolling directory - scan strong signatures
-		log.Println("Fetching strong")
 		entry := (*this.rollingDirs)[0]
 		if entries, err := this.worker.Readdirnames(path.Join(this.pathName, entry)); err == nil {
 			this.strongFiles = &entries
 			return this.nextSignature()
 		}
-	} else if len(*this.strongFiles) == 0 {
+	} else if len(*this.strongFiles) == 0{
 		// all strong signatures listed
 		this.strongFiles = nil
 		next := (*this.rollingDirs)[1:]
@@ -96,4 +106,12 @@ func (this *File) StartStream(dummy int, token *string) (err error) {
 		err = rpc.RegisterName(*token, stream)
 	}
 	return err
+}
+
+func (this *File) SaveChunk(chunk Chunk, dummy *int) (err error) {
+	rollingPath := path.Join(this.pathName, chunk.Rolling)
+	if err = this.worker.MkdirAll(rollingPath); err == nil {
+		
+	}
+	return
 }

@@ -37,7 +37,7 @@ func TestFileNextSignature(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mock := NewMockfileSystemWorker(mockCtrl)
-	mkdirAll := mock.EXPECT().MkdirAll("/a/b/c/d.txt").Return(io.EOF)
+	mkdirAll := mock.EXPECT().MkdirAll("/a/b/c/d.txt").Return(nil)
 	rolling := []string{"abc", "123"}
 	readRolling := mock.EXPECT().Readdirnames("/a/b/c/d.txt").After(mkdirAll).Return(rolling, nil)
 	strongOne := []string{"def", "ghi"}
@@ -46,7 +46,7 @@ func TestFileNextSignature(t *testing.T) {
 	mock.EXPECT().Readdirnames("/a/b/c/d.txt/123").After(readRolling).Return(strongTwo, nil)
 
 	file, err := newFileInjected("/a/b/c/d.txt", mock)
-	assert.NotNil(t, file)
+	assert.NotNil(file)
 	signature, err := file.nextSignature()
 	assert.NoError(err)
 	assert.Equal(Signature{Rolling: "abc", Strong: "def"}, signature)
@@ -61,4 +61,22 @@ func TestFileNextSignature(t *testing.T) {
 	assert.Equal(Signature{Rolling: "123", Strong: "789"}, signature)
 	_, err = file.nextSignature()
 	assert.Equal(io.EOF, err)
+}
+
+func TestFileNextSignatureOnlyDirs(t *testing.T) {
+	assert := assert.New(t)
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mock := NewMockfileSystemWorker(mockCtrl)
+	mkdirAll := mock.EXPECT().MkdirAll("/a/b/c/d.txt").Return(nil)
+	rolling := []string{"abc", "123"}
+	mock.EXPECT().Readdirnames("/a/b/c/d.txt").After(mkdirAll).Return(rolling, nil)
+	mock.EXPECT().IsDir(gomock.Any()).AnyTimes().Return(false)
+
+	file, err := newFileInjected("/a/b/c/d.txt", mock)
+	assert.NotNil(file)
+	_, err = file.nextSignature()
+	assert.Error(err)
 }

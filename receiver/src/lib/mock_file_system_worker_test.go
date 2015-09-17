@@ -48,3 +48,23 @@ func (_m *MockfileSystemWorker) MkdirAll(pathName string) error {
 func (_mr *_MockfileSystemWorkerRecorder) MkdirAll(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "MkdirAll", arg0)
 }
+
+func (_m *MockfileSystemWorker) IsDir(pathName string) bool {
+	ret := _m.ctrl.Call(_m, "IsDir", pathName)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+func (_mr *_MockfileSystemWorkerRecorder) IsDir(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "IsDir", arg0)
+}
+
+func (_m *MockfileSystemWorker) WriteFile(pathName string, data []byte) error {
+	ret := _m.ctrl.Call(_m, "WriteFile", pathName, data)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (_mr *_MockfileSystemWorkerRecorder) WriteFile(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "WriteFile", arg0, arg1)
+}
