@@ -1,4 +1,4 @@
-package transmitter
+package signatures
 
 import (
 	"sort"

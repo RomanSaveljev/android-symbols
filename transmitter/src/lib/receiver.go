@@ -3,6 +3,7 @@ package transmitter
 import (
 	"fmt"
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
 	"net/rpc"
 	"io"
 )
@@ -11,16 +12,17 @@ import (
 
 type Receiver interface {
 	io.WriteCloser
-	NextSignature() (receiver.Signature, error)
 	SaveChunk(chunk *receiver.Chunk) error
+	Signatures() (*signatures.Signatures, error)
 }
 
-//go:generate $GOPATH/bin/mockgen -package transmitter -destination mock_receiver_test.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Receiver
+//go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_receiver.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Receiver
 
 type realReceiver struct {
 	client *rpc.Client
 	token  string
 	stream string
+	signatures *signatures.Signatures
 }
 
 // Registers object on the server side and creates a necessary file tree
@@ -32,8 +34,26 @@ func NewReceiver(fileName string, client *rpc.Client) (Receiver, error) {
 	return &rx, err
 }
 
+func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) {
+	if this.signatures == nil {
+		sigs = signatures.NewSignatures()
+		for true {
+			if sig, err := this.nextSignature(); err == nil {
+				sigs.Add(sig.Rolling, sig.Strong)
+			} else {
+				break
+			}
+		}
+		if err == io.EOF {
+			this.signatures = sigs
+			err = nil
+		}
+	}
+	return
+}
+
 // Retrieves next signature or returns error
-func (this *realReceiver) NextSignature() (receiver.Signature, error) {
+func (this *realReceiver) nextSignature() (receiver.Signature, error) {
 	var sig receiver.Signature
 	err := this.client.Call(fmt.Sprint(this.token, ".NextSignature"), nil, &sig)
 	return sig, err

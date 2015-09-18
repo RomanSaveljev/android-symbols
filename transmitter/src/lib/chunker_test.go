@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -26,7 +27,7 @@ func TestChunkerWrite(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	receiver := NewMockReceiver(mockCtrl)
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 
 	chunker := NewChunker(encoder, receiver)
@@ -39,7 +40,7 @@ func TestChunkerCloseEmpty(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	receiver := NewMockReceiver(mockCtrl)
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	encoder.EXPECT().Close()
 
@@ -53,7 +54,7 @@ func TestChunkerCloseEncoderError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	receiver := NewMockReceiver(mockCtrl)
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	encoder.EXPECT().Close().Return(errors.New("BOO!"))
 
@@ -67,7 +68,7 @@ func TestChunkerCloseFlushes(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	receiver := NewMockReceiver(mockCtrl)
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	flushingWrite := encoder.EXPECT().Write([]byte{'a', 'b'}).Times(1).Return(2, nil)
 	encoder.EXPECT().Close().After(flushingWrite)
@@ -86,7 +87,7 @@ func TestChunkerCloseFlushWriteError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	receiver := NewMockReceiver(mockCtrl)
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	encoder.EXPECT().Write([]byte{'a'}).Return(0, errors.New("ERROR"))
 
@@ -102,7 +103,7 @@ func TestChunkerCloseFlushIncompleteWrite(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	receiver := NewMockReceiver(mockCtrl)
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	errorWrite := encoder.EXPECT().Write([]byte{'a', 'b'}).Return(1, errors.New("ERROR"))
 	success := encoder.EXPECT().Write([]byte{'b'}).After(errorWrite).Return(1, nil)
@@ -124,7 +125,7 @@ func TestChunkerFlush(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	receiver := NewMockReceiver(mockCtrl)
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	failure := encoder.EXPECT().Write([]byte{'a', 'b'}).Return(1, errors.New("ERROR"))
 	encoder.EXPECT().Write([]byte{'b', 'c'}).After(failure).Return(2, nil)
@@ -147,7 +148,7 @@ func TestChunkerWriteSignature(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	receiver := NewMockReceiver(mockCtrl)
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	encoder.EXPECT().WriteSignature("123", "abc")
 
@@ -161,7 +162,7 @@ func TestChunkerFlushBeforeWriteSignature(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	receiver := NewMockReceiver(mockCtrl)
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	flush := encoder.EXPECT().Write([]byte{'a'}).Return(1, nil)
 	encoder.EXPECT().WriteSignature("123", "abc").After(flush)
@@ -173,28 +174,12 @@ func TestChunkerFlushBeforeWriteSignature(t *testing.T) {
 	assert.NoError(err)
 }
 
-func TestChunkerBufferLenCap(t *testing.T) {
-	assert := assert.New(t)
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	rcv := NewMockReceiver(mockCtrl)
-	encoder := NewMockEncoder(mockCtrl)
-
-	chunker := NewChunker(encoder, rcv)
-	assert.Equal(receiver.CHUNK_SIZE, cap(chunker.buffer))
-	assert.Zero(len(chunker.buffer))
-	chunker.Write('a')
-	assert.Equal(receiver.CHUNK_SIZE, cap(chunker.buffer))
-	assert.Equal(1, len(chunker.buffer))
-}
-
 func TestChunkerFullBufferCreatesSignature(t *testing.T) {
 	assert := assert.New(t)
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	rcv := NewMockReceiver(mockCtrl)
+	rcv := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	saveChunk := rcv.EXPECT().SaveChunk(gomock.Any())
 	encoder.EXPECT().WriteSignature(gomock.Any(), gomock.Any()).After(saveChunk)
@@ -211,7 +196,7 @@ func TestChunkerBufferEmptiesOnFlush(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	rcv := NewMockReceiver(mockCtrl)
+	rcv := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := NewMockEncoder(mockCtrl)
 	encoder.EXPECT().Write(&matchLength{receiver.CHUNK_SIZE/2 + 1}).Times(2).Return(receiver.CHUNK_SIZE/2+1, nil)
 
