@@ -1,35 +1,25 @@
 package transmitter
-/*
+
 import (
-    "testing"
-    "bytes"
-    "github.com/stretchr/testify/assert"
+	"bytes"
+	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/mock"
+	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-func TestCompressorEmptySignatures(t *testing.T) {
-	var b bytes.Buffer
-	s := NewSignatures()
-	compress := NewCompressor(s, 1, &b)
-	n, err := compress.Write([]byte{'e'})
-	assert.Equal(t, 1, n)
-	assert.Equal(t, nil, err)
-	err = compress.Close()
-	assert.Equal(t, nil, err)
-	assert.Equal(t, "AH\n", b.String())
+func TestCompressorWrite(t *testing.T) {
+	assert := assert.New(t)
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
+	chunker := mock_transmitter.
+
+	compressor := NewCompressor(chunker, receiver)
 }
 
-func TestCompressorLongerBuffer(t *testing.T) {
-	var b bytes.Buffer
-	s := NewSignatures()
-	compress := NewCompressor(s, 3, &b)
-	n, err := compress.Write([]byte("eee"))
-	assert.Equal(t, 3, n)
-	assert.Equal(t, nil, err)
-	err = compress.Close()
-	assert.Equal(t, nil, err)
-	assert.Equal(t, "AS#E\n", b.String())	
-}
-
+/*
 func TestCompressorLongerBufferOverflow(t *testing.T) {
 	var b bytes.Buffer
 	s := NewSignatures()
@@ -39,7 +29,7 @@ func TestCompressorLongerBufferOverflow(t *testing.T) {
 	assert.Equal(t, nil, err)
 	err = compress.Close()
 	assert.Equal(t, nil, err)
-	assert.Equal(t, "AS#G!H?qA-0E\n", b.String())	
+	assert.Equal(t, "AS#G!H?qA-0E\n", b.String())
 }
 
 // check that signature is applied only when the buffer gets full

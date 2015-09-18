@@ -13,6 +13,8 @@ type Chunker interface {
 	Close() (err error)
 }
 
+//go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_chunker.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Chunker
+
 type realChunker struct {
 	Chunk
 	buffer   []byte
