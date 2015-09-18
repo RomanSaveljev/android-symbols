@@ -11,7 +11,7 @@ type Encoder interface {
 	WriteSignature(rolling string, strong string) error
 }
 
-//go:generate $GOPATH/bin/mockgen -package transmitter -destination mock_encoder_test.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Encoder
+//go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_encoder.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Encoder
 
 type ascii85Writer struct {
 	writer       io.WriteCloser
