@@ -115,7 +115,7 @@ func (this *File) SaveChunk(chunk Chunk, dummy *int) error {
 func (this *File) saveChunk(chunk *Chunk) (err error) {
 	rollingPath := path.Join(this.pathName, chunk.Rolling)
 	if err = this.worker.MkdirAll(rollingPath); err == nil {
-		err = this.worker.WriteFile(path.Join(rollingPath, chunk.Strong), chunk.data[:])
+		err = this.worker.WriteFile(path.Join(rollingPath, chunk.Strong), chunk.Data[:])
 	}
 	return
 }

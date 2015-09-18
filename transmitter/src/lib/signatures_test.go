@@ -1,5 +1,6 @@
-package shared
+package transmitter
 
+/*
 import (
     "testing"
     "github.com/stretchr/testify/assert"
@@ -41,3 +42,4 @@ func TestGetOneOfFew(t *testing.T) {
 	assert.Equal(t, slice388[0], "222")
 	assert.Equal(t, slice388[1], "444")
 }
+*/

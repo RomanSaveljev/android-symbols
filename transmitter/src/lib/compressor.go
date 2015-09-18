@@ -7,7 +7,7 @@ import (
 	"io"
 	"log"
 	"sort"
-	//"github.com/RomanSaveljev/android-symbols/shared/src/shared"
+	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 )
 
 // Takes a list of signatures and produces a stream of literal bytes
@@ -17,20 +17,20 @@ import (
 
 type compressor struct {
 	buffer     []byte
-	enc        *encoder
+	enc        Encoder
 	signatures *Signatures
 }
 
-func NewCompressor(signatures *shared.Signatures, bufferSize uint, destination io.Writer) io.WriteCloser {
+func NewCompressor(signatures *Signatures, destination io.Writer) io.WriteCloser {
 	var tx compressor
-	tx.buffer = make([]byte, 0, bufferSize)
-	tx.enc = newEncoder(destination)
+	tx.buffer = make([]byte, 0, receiver.CHUNK_SIZE)
+	tx.enc = NewEncoder(destination)
 	tx.signatures = signatures
 	return &tx
 }
 
 func (this *compressor) writeFirst() error {
-	err := this.enc.Write(this.buffer[0])
+	_, err := this.enc.Write(this.buffer[:1])
 	if err == nil {
 		buffer := make([]byte, len(this.buffer) - 1, cap(this.buffer))
 		copy(buffer, this.buffer[1:])
@@ -39,7 +39,7 @@ func (this *compressor) writeFirst() error {
 	return err
 }
 
-func (this *compressor) writeSignature(rolling uint32, signature string) error {
+func (this *compressor) writeSignature(rolling string, signature string) error {
 	log.Println("writeSignature")
 	err := this.enc.WriteSignature(rolling, signature)
 	if err == nil {
@@ -55,8 +55,8 @@ func (this *compressor) writeOne(p byte) (err error) {
 	log.Printf("cap = %d len = %d", cap(this.buffer), len(this.buffer))
 	if len(this.buffer) == cap(this.buffer) {
 		log.Println("len reached cap and buf=%s", string(this.buffer))
-		rolling := crc32.ChecksumIEEE(this.buffer)
-		log.Printf("crc=%x", rolling)
+		rolling := fmt.Sprintf("%08x", crc32.ChecksumIEEE(this.buffer))
+		log.Printf("crc=%v", rolling)
 		candidates := this.signatures.Get(rolling)
 		log.Printf("candidates len=%d", len(candidates))
 		if len(candidates) == 0 {
@@ -89,9 +89,7 @@ func (this *compressor) Write(p []byte) (n int, err error) {
 func (this *compressor) Close() error {
 	var err error
 	log.Printf("Close len=%d buffer=%s", len(this.buffer), this.buffer)
-	for i := 0; i < len(this.buffer) && err == nil; i++ {
-		err = this.enc.Write(this.buffer[i])
-	}
+	_, err = this.enc.Write(this.buffer)
 	if err == nil {
 		err = this.enc.Close()
 	}

@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/RomanSaveljev/android-symbols/shared/src/shared"
 	"log"
 	"net/rpc"
 )
@@ -22,7 +21,7 @@ func main() {
 
 	//rest := flag.Args()
 
-	var tr shared.Transport
+	var tr Transport
 	log.Println("transport created")
 	client := rpc.NewClient(&tr)
 	log.Println("client created")

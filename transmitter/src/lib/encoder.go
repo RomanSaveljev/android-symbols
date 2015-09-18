@@ -1,10 +1,17 @@
-package main
+package transmitter
 
 import (
 	"encoding/ascii85"
 	"fmt"
 	"io"
 )
+
+type Encoder interface {
+	io.WriteCloser
+	WriteSignature(rolling string, strong string) error
+}
+
+//go:generate $GOPATH/bin/mockgen -package transmitter -destination mock_encoder_test.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Encoder
 
 type ascii85Writer struct {
 	writer       io.WriteCloser
@@ -36,25 +43,23 @@ func (this *ascii85Writer) Close() error {
 	return err
 }
 
-type encoder struct {
+type realEncoder struct {
 	writer      *ascii85Writer
 	destination io.Writer
 }
 
-func newEncoder(destination io.Writer) *encoder {
-	var enc encoder
+func NewEncoder(destination io.Writer) Encoder {
+	var enc realEncoder
 	enc.writer = newAscii85Writer(destination)
 	enc.destination = destination
 	return &enc
 }
 
-func (this *encoder) Write(p byte) error {
-	var err error
-	_, err = this.writer.Write([]byte{p})
-	return err
+func (this *realEncoder) Write(p []byte) (n int, err error) {
+	return this.writer.Write(p)
 }
 
-func (this *encoder) WriteSignature(rolling uint32, strong string) error {
+func (this *realEncoder) WriteSignature(rolling string, strong string) error {
 	err := this.writer.Close()
 	this.writer = newAscii85Writer(this.destination)
 	if err == nil {
@@ -64,6 +69,6 @@ func (this *encoder) WriteSignature(rolling uint32, strong string) error {
 	return err
 }
 
-func (this *encoder) Close() error {
+func (this *realEncoder) Close() error {
 	return this.writer.Close()
 }
