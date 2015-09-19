@@ -5,11 +5,13 @@ import (
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
 	"io"
+	"log"
 )
 
 type Client interface {
 	Call(serviceMethod string, args interface{}, reply interface{}) error
 }
+
 //go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_client.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Client
 
 type Receiver interface {
@@ -40,16 +42,20 @@ func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) 
 	if this.signatures == nil {
 		sigs = signatures.NewSignatures()
 		for true {
-			if sig, err := this.nextSignature(); err == nil {
+			var sig receiver.Signature
+			if sig, err = this.nextSignature(); err == nil {
 				sigs.Add(sig.Rolling, sig.Strong)
 			} else {
 				break
 			}
 		}
-		if err == io.EOF {
+		log.Printf("%v %v %v", err, io.EOF, err == io.EOF)
+		if err.Error() == io.EOF.Error() {
 			this.signatures = sigs
 			err = nil
 		}
+	} else {
+		sigs = this.signatures
 	}
 	return
 }
@@ -57,7 +63,7 @@ func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) 
 // Retrieves next signature or returns error
 func (this *realReceiver) nextSignature() (receiver.Signature, error) {
 	var sig receiver.Signature
-	err := this.client.Call(fmt.Sprint(this.token, ".NextSignature"), nil, &sig)
+	err := this.client.Call(fmt.Sprint(this.token, ".NextSignature"), 0, &sig)
 	return sig, err
 }
 

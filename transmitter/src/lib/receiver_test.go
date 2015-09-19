@@ -18,9 +18,9 @@ func TestReceiver(t *testing.T) {
 	client := mock_transmitter.NewMockClient(mockCtrl)
 	gomock.InOrder(
 		client.EXPECT().Call("Synchronizer.StartFile", "/a/b/c/d.txt", gomock.Any()).SetArg(2, "file-token"),
-		client.EXPECT().Call("file-token.StartStream", gomock.Any(), gomock.Any()).SetArg(2, "stream-token"),
+		client.EXPECT().Call("file-token.StartStream", gomock.Not(nil), gomock.Any()).SetArg(2, "stream-token"),
 		client.EXPECT().Call("stream-token.Write", []byte("abc"), gomock.Any()).SetArg(2, 3),
-		client.EXPECT().Call("stream-token.Close", gomock.Any(), gomock.Any()),
+		client.EXPECT().Call("stream-token.Close", gomock.Not(nil), gomock.Any()),
 	)
 
 	rcv, err := NewReceiver("/a/b/c/d.txt", client)
@@ -70,10 +70,10 @@ func TestReceiverCollectSignatures(t *testing.T) {
 	client := mock_transmitter.NewMockClient(mockCtrl)
 	gomock.InOrder(
 		client.EXPECT().Call("Synchronizer.StartFile", "/a/b/c/d.txt", gomock.Any()).SetArg(2, "tkn"),
-		client.EXPECT().Call("tkn.NextSignature", gomock.Any(), gomock.Any()).SetArg(2, one),
-		client.EXPECT().Call("tkn.NextSignature", gomock.Any(), gomock.Any()).SetArg(2, two),
-		client.EXPECT().Call("tkn.NextSignature", gomock.Any(), gomock.Any()).SetArg(2, three),
-		client.EXPECT().Call("tkn.NextSignature", gomock.Any(), gomock.Any()).Return(io.EOF),
+		client.EXPECT().Call("tkn.NextSignature", gomock.Not(nil), gomock.Any()).SetArg(2, one),
+		client.EXPECT().Call("tkn.NextSignature", gomock.Not(nil), gomock.Any()).SetArg(2, two),
+		client.EXPECT().Call("tkn.NextSignature", gomock.Not(nil), gomock.Any()).SetArg(2, three),
+		client.EXPECT().Call("tkn.NextSignature", gomock.Not(nil), gomock.Any()).Return(io.EOF),
 	)
 
 	rcv, err := NewReceiver("/a/b/c/d.txt", client)
@@ -85,4 +85,27 @@ func TestReceiverCollectSignatures(t *testing.T) {
 	assert.Equal("789", sigs.Get("123")[1])
 	err = rcv.Close()
 	assert.NoError(err)
+}
+
+func TestReceiverGetCachedSignatures(t *testing.T) {
+	assert := assert.New(t)
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	client := mock_transmitter.NewMockClient(mockCtrl)
+	gomock.InOrder(
+		client.EXPECT().Call("Synchronizer.StartFile", "/a/b/c/d.txt", gomock.Any()).SetArg(2, "tkn"),
+		client.EXPECT().Call("tkn.NextSignature", gomock.Not(nil), gomock.Any()).Return(io.EOF),
+	)
+
+	rcv, err := NewReceiver("/a/b/c/d.txt", client)
+	assert.NoError(err)
+	sigs, err := rcv.Signatures()
+	assert.NoError(err)
+	candidates := sigs.Get("123")
+	assert.Empty(candidates)
+	sigs, err = rcv.Signatures()
+	assert.NoError(err)
+	candidates = sigs.Get("456")
+	assert.Empty(candidates)	
 }

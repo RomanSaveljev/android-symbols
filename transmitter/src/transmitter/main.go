@@ -3,18 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/rpc"
-	"os/exec"
-	"os"
-	"strings"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib"
+	"net/rpc"
+	"os"
+	"os/exec"
 	"path"
+	"strings"
 )
 
 const APP_VERSION = "0.0.1"
 
-// RECEIVER=cmd.. transmitter files...
- 
+// RECEIVER=cmd.. PREFIX=... transmitter files...
+
 // The flag package provides a default help printer via -h switch
 var versionFlag *bool = flag.Bool("v", false, "Print the version number")
 
@@ -32,13 +32,13 @@ func main() {
 	if len(command) == 0 {
 		panic("RECEIVER environment variable must tell receiver command")
 	}
-	
+
 	prefix := os.Getenv("PREFIX")
-	
-	splitCmd := strings.Split(" ", command)
+
+	splitCmd := strings.Split(command, " ")
 	tr, err := NewProcessTransport(exec.Command(splitCmd[0], splitCmd[1:]...))
 	if err != nil {
-		panic("Failed to create a transport")
+		panic(fmt.Sprintf("Failed to create a transport: %v", err))
 	}
 	defer tr.Close()
 	client := rpc.NewClient(tr)
@@ -48,6 +48,6 @@ func main() {
 			rcv, _ := transmitter.NewReceiver(path.Join(prefix, f), client)
 			transmitter.ProcessFileSync(file, rcv)
 			file.Close()
-		}		
+		}
 	}
 }
