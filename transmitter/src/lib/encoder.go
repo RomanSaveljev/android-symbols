@@ -63,7 +63,7 @@ func (this *realEncoder) WriteSignature(rolling string, strong string) error {
 	err := this.writer.Close()
 	this.writer = newAscii85Writer(this.destination)
 	if err == nil {
-		input := []byte(fmt.Sprintf("\t%08x/%s\n", rolling, strong))
+		input := []byte(fmt.Sprintf("\t%s/%s\n", rolling, strong))
 		_, err = this.destination.Write(input)
 	}
 	return err
