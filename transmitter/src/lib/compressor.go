@@ -92,10 +92,13 @@ func (this *Compressor) Write(p []byte) (n int, err error) {
 }
 
 func (this *Compressor) Close() (err error) {
-	for len(this.buffer) != 0 {
+	for len(this.buffer) != 0 && err == nil {
 		if err = this.chunker.Write(this.buffer[0]); err == nil {
 			this.shiftData()
 		}
+	}
+	if err == nil {
+		err = this.chunker.Close()
 	}
 	return
 }
