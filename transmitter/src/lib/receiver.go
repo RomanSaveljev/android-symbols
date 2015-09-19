@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
-	"net/rpc"
 	"io"
 )
 
-// Hides RPC details of the receiving end
+type Client interface {
+	Call(serviceMethod string, args interface{}, reply interface{}) error
+}
+//go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_client.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Client
 
 type Receiver interface {
 	io.WriteCloser
@@ -19,7 +21,7 @@ type Receiver interface {
 //go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_receiver.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Receiver
 
 type realReceiver struct {
-	client *rpc.Client
+	client Client
 	token  string
 	stream string
 	signatures *signatures.Signatures
@@ -27,10 +29,10 @@ type realReceiver struct {
 
 // Registers object on the server side and creates a necessary file tree
 // if this is a new file
-func NewReceiver(fileName string, client *rpc.Client) (Receiver, error) {
+func NewReceiver(fileName string, client Client) (Receiver, error) {
 	var rx realReceiver
 	rx.client = client
-	err := client.Call("Registrar.Create", &fileName, &rx.token)
+	err := client.Call("Synchronizer.StartFile", fileName, &rx.token)
 	return &rx, err
 }
 
@@ -81,5 +83,5 @@ func (this *realReceiver) Close() (err error) {
 
 // Creates a new chunk
 func (this *realReceiver) SaveChunk(chunk *receiver.Chunk) error {
-	return this.client.Call(fmt.Sprint(this.token, ".SaveChunk"), chunk, nil)
+	return this.client.Call(fmt.Sprint(this.token, ".SaveChunk"), *chunk, nil)
 }

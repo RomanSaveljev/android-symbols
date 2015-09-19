@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestProcessFileSyncSmall(t *testing.T) {
+func TestProcessFileSync(t *testing.T) {
 	assert := assert.New(t)
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()

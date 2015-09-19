@@ -108,8 +108,11 @@ func TestCompressorOverlappingSignatures(t *testing.T) {
 	rcv := mock_transmitter.NewMockReceiver(mockCtrl)
 	chunker := mock_transmitter.NewMockChunker(mockCtrl)
 	rcv.EXPECT().Signatures().AnyTimes().Return(sigs, nil)
-	writeSig := chunker.EXPECT().WriteSignature(chunk.Rolling, chunk.Strong)
-	chunker.EXPECT().Write(overlap.Data[len(overlap.Data)-1]).After(writeSig)
+	gomock.InOrder(
+		chunker.EXPECT().WriteSignature(chunk.Rolling, chunk.Strong),
+		chunker.EXPECT().Write(overlap.Data[len(overlap.Data)-1]),
+		chunker.EXPECT().Close(),
+	)
 
 	buffer := append(chunk.Data[:1], overlap.Data[:]...)
 	compressor := NewCompressor(chunker, rcv)
@@ -142,6 +145,7 @@ func TestCompressorNoMatchingSignature(t *testing.T) {
 	for _, e := range chunk.Data[1:] {
 		write = chunker.EXPECT().Write(e).After(write)
 	}
+	chunker.EXPECT().Close().After(write)
 	err = compressor.Close()
 	assert.NoError(err)
 }
@@ -158,9 +162,12 @@ func TestCompressorCloseWritesRemainingBytes(t *testing.T) {
 	n, err := compressor.Write([]byte{'a', 'b', 'c'})
 	assert.NoError(err)
 	assert.Equal(3, n)
-	first := chunker.EXPECT().Write(byte('a')).Return(nil)
-	second := chunker.EXPECT().Write(byte('b')).After(first).Return(nil)
-	chunker.EXPECT().Write(byte('c')).After(second).Return(nil)
+	gomock.InOrder(
+		chunker.EXPECT().Write(byte('a')),
+		chunker.EXPECT().Write(byte('b')),
+		chunker.EXPECT().Write(byte('c')),
+		chunker.EXPECT().Close(),
+	)
 	err = compressor.Close()
 	assert.NoError(err)
 }
