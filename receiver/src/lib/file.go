@@ -4,9 +4,11 @@ package receiver
 
 import (
 	"io"
+	"io/ioutil"
 	"net/rpc"
 	"os"
 	"path"
+	"log"
 )
 
 type fileSystemWorker interface {
@@ -16,9 +18,7 @@ type fileSystemWorker interface {
 	WriteFile(pathName string, data []byte) error
 }
 
-type realFileSystemWorker struct {
-	fileSystemWorker
-}
+type realFileSystemWorker int
 
 func (this realFileSystemWorker) Readdirnames(at string) (entries []string, err error) {
 	var file *os.File
@@ -40,6 +40,10 @@ func (this realFileSystemWorker) IsDir(pathName string) bool {
 	return false
 }
 
+func (this realFileSystemWorker) WriteFile(pathName string, data []byte) error {
+	return ioutil.WriteFile(pathName, data, os.ModePerm)
+}
+
 type File struct {
 	pathName    string
 	rollingDirs *[]string
@@ -48,7 +52,8 @@ type File struct {
 }
 
 func NewFile(pathName string) (*File, error) {
-	return newFileInjected(pathName, realFileSystemWorker{})
+	var worker realFileSystemWorker
+	return newFileInjected(pathName, &worker)
 }
 
 func newFileInjected(pathName string, worker fileSystemWorker) (*File, error) {
@@ -109,6 +114,7 @@ func (this *File) StartStream(dummy int, token *string) (err error) {
 }
 
 func (this *File) SaveChunk(chunk Chunk, dummy *int) error {
+	log.Println("SaveChunk")
 	return this.saveChunk(&chunk)
 }
 
@@ -116,6 +122,7 @@ func (this *File) saveChunk(chunk *Chunk) (err error) {
 	rollingPath := path.Join(this.pathName, chunk.Rolling)
 	if err = this.worker.MkdirAll(rollingPath); err == nil {
 		err = this.worker.WriteFile(path.Join(rollingPath, chunk.Strong), chunk.Data[:])
+		log.Printf("err = %v", err) 
 	}
 	return
 }

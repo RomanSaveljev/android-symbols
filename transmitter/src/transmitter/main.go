@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"log"
 )
 
 const APP_VERSION = "0.0.1"
@@ -19,6 +20,7 @@ const APP_VERSION = "0.0.1"
 var versionFlag *bool = flag.Bool("v", false, "Print the version number")
 
 func main() {
+	log.Println("TX: starting")
 	flag.Parse() // Scan the arguments list
 
 	if *versionFlag {
@@ -40,6 +42,7 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create a transport: %v", err))
 	}
+	log.Println("TX: transport created")
 	defer tr.Close()
 	client := rpc.NewClient(tr)
 	defer client.Close()

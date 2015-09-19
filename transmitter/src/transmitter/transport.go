@@ -3,6 +3,7 @@ package main
 import (
 	"os/exec"
 	"io"
+	"os"
 )
 
 type Transport struct {
@@ -22,6 +23,7 @@ func NewProcessTransport(cmd *exec.Cmd) (*Transport, error) {
 	if err != nil {
 		return nil, err
 	}
+	cmd.Stderr = os.Stderr
 	if err = cmd.Start(); err != nil {
 		tr.read.Close()
 		tr.write.Close()

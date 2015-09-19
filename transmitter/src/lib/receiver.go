@@ -89,5 +89,6 @@ func (this *realReceiver) Close() (err error) {
 
 // Creates a new chunk
 func (this *realReceiver) SaveChunk(chunk *receiver.Chunk) error {
+	log.Println("TX: SaveChunk")
 	return this.client.Call(fmt.Sprint(this.token, ".SaveChunk"), *chunk, nil)
 }
