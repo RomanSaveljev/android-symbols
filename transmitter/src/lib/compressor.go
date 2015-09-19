@@ -2,7 +2,6 @@ package transmitter
 
 import (
 	"io"
-	"log"
 	"sort"
 )
 
@@ -48,11 +47,9 @@ func (this *Compressor) writeFirst() error {
 }
 
 func (this *Compressor) writeSignature(rolling string, signature string) error {
-	log.Println("writeSignature")
 	err := this.chunker.WriteSignature(rolling, signature)
 	if err == nil {
 		this.emptyBuffer()
-		log.Printf("new cap=%d", cap(this.buffer))
 	}
 	return err
 }
@@ -67,7 +64,6 @@ func (this *Compressor) tryWriteSignature() (err error) {
 			strong := this.CountStrong()
 			idx := sort.Search(len(candidates), func(i int) bool { return strong == candidates[i] })
 			if idx == len(candidates) {
-				log.Println("strong signature not found")
 				err = this.writeFirst()
 			} else {
 				err = this.writeSignature(rolling, candidates[idx])
@@ -78,9 +74,7 @@ func (this *Compressor) tryWriteSignature() (err error) {
 }
 
 func (this *Compressor) writeOne(p byte) (err error) {
-	log.Println("WriteOne")
 	this.buffer = append(this.buffer, p)
-	log.Printf("cap = %d len = %d", cap(this.buffer), len(this.buffer))
 	if this.isFull() {
 		if err = this.tryWriteSignature(); err != nil {
 			this.buffer = this.buffer[0 : len(this.buffer)-1]
@@ -98,7 +92,6 @@ func (this *Compressor) Write(p []byte) (n int, err error) {
 }
 
 func (this *Compressor) Close() (err error) {
-	log.Printf("Close len=%d buffer=%s", len(this.buffer), this.buffer)
 	for len(this.buffer) != 0 {
 		if err = this.chunker.Write(this.buffer[0]); err == nil {
 			this.shiftData()
