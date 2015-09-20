@@ -41,7 +41,7 @@ func (this realFileSystemWorker) IsDir(pathName string) bool {
 }
 
 func (this realFileSystemWorker) WriteFile(pathName string, data []byte) error {
-	return ioutil.WriteFile(pathName, data, os.ModePerm)
+	return ioutil.WriteFile(pathName, data, os.FileMode(0666))
 }
 
 type File struct {
