@@ -4,7 +4,6 @@
 package mock_transmitter
 
 import (
-	lib "github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	signatures "github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -40,14 +39,14 @@ func (_mr *_MockReceiverRecorder) Close() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Close")
 }
 
-func (_m *MockReceiver) SaveChunk(_param0 *lib.Chunk) error {
-	ret := _m.ctrl.Call(_m, "SaveChunk", _param0)
+func (_m *MockReceiver) SaveChunk(_param0 []byte, _param1 []byte, _param2 []byte) error {
+	ret := _m.ctrl.Call(_m, "SaveChunk", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockReceiverRecorder) SaveChunk(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SaveChunk", arg0)
+func (_mr *_MockReceiverRecorder) SaveChunk(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "SaveChunk", arg0, arg1, arg2)
 }
 
 func (_m *MockReceiver) Signatures() (*signatures.Signatures, error) {

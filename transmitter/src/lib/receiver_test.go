@@ -2,6 +2,7 @@ package transmitter
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/mock"
 	"github.com/golang/mock/gomock"
@@ -38,8 +39,8 @@ func TestReceiverSaveChunk(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var chunk receiver.Chunk
-	chunk.Rolling = "abc"
-	chunk.Strong = "def"
+	chunk.Rolling = hex.EncodeToString([]byte{1, 2})
+	chunk.Strong = hex.EncodeToString([]byte{3, 4})
 	n, err := rand.Read(chunk.Data[:])
 	assert.NoError(err)
 	assert.Equal(len(chunk.Data), n)
@@ -52,7 +53,7 @@ func TestReceiverSaveChunk(t *testing.T) {
 
 	rcv, err := NewReceiver("/a/b/c/d.txt", client)
 	assert.NoError(err)
-	err = rcv.SaveChunk(&chunk)
+	err = rcv.SaveChunk([]byte{1, 2}, []byte{3, 4}, chunk.Data[:])
 	assert.NoError(err)
 	err = rcv.Close()
 	assert.NoError(err)
@@ -63,9 +64,9 @@ func TestReceiverCollectSignatures(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	one := receiver.Signature{Rolling: "abc", Strong: "def"}
-	two := receiver.Signature{Rolling: "123", Strong: "456"}
-	three := receiver.Signature{Rolling: "123", Strong: "789"}
+	one := receiver.Signature{Rolling: "abcd", Strong: "def0"}
+	two := receiver.Signature{Rolling: "1234", Strong: "4567"}
+	three := receiver.Signature{Rolling: "1234", Strong: "789a"}
 
 	client := mock_transmitter.NewMockClient(mockCtrl)
 	gomock.InOrder(
@@ -80,9 +81,9 @@ func TestReceiverCollectSignatures(t *testing.T) {
 	assert.NoError(err)
 	sigs, err := rcv.Signatures()
 	assert.NoError(err)
-	assert.Equal("def", sigs.Get("abc")[0])
-	assert.Equal("456", sigs.Get("123")[0])
-	assert.Equal("789", sigs.Get("123")[1])
+	assert.True(sigs.Get([]byte{0xab, 0xcd}).Has([]byte{0xde, 0xf0}))
+	assert.True(sigs.Get([]byte{0x12, 0x34}).Has([]byte{0x45, 0x67}))
+	assert.True(sigs.Get([]byte{0x12, 0x34}).Has([]byte{0x78, 0x9a}))
 	err = rcv.Close()
 	assert.NoError(err)
 }
@@ -102,10 +103,10 @@ func TestReceiverGetCachedSignatures(t *testing.T) {
 	assert.NoError(err)
 	sigs, err := rcv.Signatures()
 	assert.NoError(err)
-	candidates := sigs.Get("123")
-	assert.Empty(candidates)
+	candidates := sigs.Get([]byte{0x12, 0x34})
+	assert.Nil(candidates)
 	sigs, err = rcv.Signatures()
 	assert.NoError(err)
-	candidates = sigs.Get("456")
-	assert.Empty(candidates)	
+	candidates = sigs.Get([]byte{0x45, 0x67})
+	assert.Nil(candidates)
 }

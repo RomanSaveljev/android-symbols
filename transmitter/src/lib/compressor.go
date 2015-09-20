@@ -2,7 +2,6 @@ package transmitter
 
 import (
 	"io"
-	"sort"
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 )
 
@@ -34,12 +33,6 @@ func (this *Compressor) isFull() bool {
 
 func (this *Compressor) shiftData() {
 	this.buffer = this.buffer[1:]
-	/*
-	for i := 0; i < len(this.buffer)-1; i++ {
-		this.Data[i] = this.Data[i+1]
-	}
-	this.buffer = this.Data[0 : len(this.buffer)-1]
-	*/	
 }
 
 func (this *Compressor) writeFirst() error {
@@ -50,8 +43,8 @@ func (this *Compressor) writeFirst() error {
 	return err
 }
 
-func (this *Compressor) writeSignature(rolling string, signature string) error {
-	err := this.chunker.WriteSignature(rolling, signature)
+func (this *Compressor) writeSignature(rolling []byte, strong []byte) error {
+	err := this.chunker.WriteSignature(rolling, strong)
 	if err == nil {
 		this.emptyBuffer()
 	}
@@ -60,17 +53,16 @@ func (this *Compressor) writeSignature(rolling string, signature string) error {
 
 func (this *Compressor) tryWriteSignature() (err error) {
 	if signatures, err := this.receiver.Signatures(); err == nil {
-		rolling := GetRolling(this.buffer)
+		rolling := CountRolling(this.buffer)
 		candidates := signatures.Get(rolling)
-		if len(candidates) == 0 {
+		if candidates == nil {
 			err = this.writeFirst()
 		} else {
-			strong := GetStrong(this.buffer)
-			idx := sort.Search(len(candidates), func(i int) bool { return strong == candidates[i] })
-			if idx == len(candidates) {
-				err = this.writeFirst()
+			strong := CountStrong(this.buffer)
+			if candidates.Has(strong) {
+				err = this.writeSignature(rolling, strong)
 			} else {
-				err = this.writeSignature(rolling, candidates[idx])
+				err = this.writeFirst()
 			}
 		}
 	}

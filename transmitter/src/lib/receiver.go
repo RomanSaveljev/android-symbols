@@ -6,6 +6,7 @@ import (
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
 	"io"
 	"log"
+	"encoding/hex"
 )
 
 type Client interface {
@@ -16,7 +17,7 @@ type Client interface {
 
 type Receiver interface {
 	io.WriteCloser
-	SaveChunk(chunk *receiver.Chunk) error
+	SaveChunk(rolling, strong, data []byte) error
 	Signatures() (*signatures.Signatures, error)
 }
 
@@ -40,11 +41,18 @@ func NewReceiver(fileName string, client Client) (Receiver, error) {
 
 func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) {
 	if this.signatures == nil {
-		sigs = signatures.NewSignatures()
+		sigs = new(signatures.Signatures)
 		for true {
 			var sig receiver.Signature
 			if sig, err = this.nextSignature(); err == nil {
-				sigs.Add(sig.Rolling, sig.Strong)
+				var rolling, strong []byte
+				if rolling , err = hex.DecodeString(sig.Rolling); err != nil {
+					panic(err.Error())
+				}
+				if strong, err = hex.DecodeString(sig.Strong); err != nil {
+					panic(err.Error())
+				}
+				sigs.Add(rolling, strong)
 			} else {
 				break
 			}
@@ -88,7 +96,11 @@ func (this *realReceiver) Close() (err error) {
 }
 
 // Creates a new chunk
-func (this *realReceiver) SaveChunk(chunk *receiver.Chunk) error {
+func (this *realReceiver) SaveChunk(rolling, strong, data []byte) error {
 	log.Println("TX: SaveChunk")
-	return this.client.Call(fmt.Sprint(this.token, ".SaveChunk"), *chunk, nil)
+	var chunk receiver.Chunk
+	chunk.Rolling = hex.EncodeToString(rolling)
+	chunk.Strong = hex.EncodeToString(strong)
+	copy(chunk.Data[:], data)
+	return this.client.Call(fmt.Sprint(this.token, ".SaveChunk"), chunk, nil)
 }

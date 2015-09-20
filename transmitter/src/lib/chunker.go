@@ -2,13 +2,14 @@ package transmitter
 
 import (
 	"errors"
+	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 )
 
 var ErrBufferIsFull = errors.New("Buffer is full")
 
 type Chunker interface {
 	Flush() (err error)
-	WriteSignature(rolling string, strong string) (err error)
+	WriteSignature(rolling []byte, strong []byte) (err error)
 	Write(b byte) (err error)
 	Close() (err error)
 }
@@ -16,32 +17,31 @@ type Chunker interface {
 //go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_chunker.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Chunker
 
 type realChunker struct {
-	Chunk
 	buffer   []byte
 	encoder  Encoder
 	receiver Receiver
 }
 
-func NewChunker(encoder Encoder, receiver Receiver) Chunker {
-	var chunker = realChunker{encoder: encoder, receiver: receiver}
-	chunker.buffer = chunker.Data[:0]
+func NewChunker(encoder Encoder, rcv Receiver) Chunker {
+	var chunker = realChunker{encoder: encoder, receiver: rcv}
+	chunker.buffer = make([]byte, 0, receiver.CHUNK_SIZE)
 	return &chunker
 }
 
 func (this *realChunker) emptyBuffer() {
-	this.buffer = this.Data[:0]
+	this.buffer = this.buffer[:0]
 }
 
 func (this *realChunker) isFull() bool {
-	return len(this.buffer) == cap(this.buffer)
+	return len(this.buffer) == receiver.CHUNK_SIZE
 }
 
 func (this *realChunker) Flush() (err error) {
 	if this.isFull() {
-		this.CountRolling()
-		this.CountStrong()
-		if err = this.receiver.SaveChunk(&this.Chunk.Chunk); err == nil {
-			if err = this.writeSignature(this.Chunk.Rolling, this.Chunk.Strong); err == nil {
+		rolling := CountRolling(this.buffer)
+		strong := CountStrong(this.buffer)
+		if err = this.receiver.SaveChunk(rolling, strong, this.buffer); err == nil {
+			if err = this.writeSignature(rolling, strong); err == nil {
 				this.emptyBuffer()
 			}
 		}
@@ -64,14 +64,14 @@ func (this *realChunker) justFlush() (err error) {
 	return
 }
 
-func (this *realChunker) WriteSignature(rolling string, strong string) (err error) {
+func (this *realChunker) WriteSignature(rolling []byte, strong []byte) (err error) {
 	if err = this.justFlush(); err == nil {
 		err = this.writeSignature(rolling, strong)
 	}
 	return
 }
 
-func (this *realChunker) writeSignature(rolling string, strong string) error {
+func (this *realChunker) writeSignature(rolling []byte, strong []byte) error {
 	return this.encoder.WriteSignature(rolling, strong)
 }
 

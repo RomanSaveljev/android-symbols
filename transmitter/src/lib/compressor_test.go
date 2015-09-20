@@ -2,13 +2,14 @@ package transmitter
 
 import (
 	"crypto/rand"
-	"fmt"
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/mock"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"encoding/hex"
+	"log"
 )
 
 func TestCompressorWriteStuffsTheBuffer(t *testing.T) {
@@ -34,12 +35,14 @@ func TestCompressorWriteStuffsTheBuffer(t *testing.T) {
 	assert.NoError(err)
 }
 
-func randomChunk(t *testing.T) (chunk Chunk) {
+func randomChunk(t *testing.T) (chunk receiver.Chunk, rolling, strong []byte) {
 	n, err := rand.Read(chunk.Data[:])
 	assert.NoError(t, err)
 	assert.Equal(t, len(chunk.Data), n)
-	chunk.CountRolling()
-	chunk.CountStrong()
+	rolling = CountRolling(chunk.Data[:])
+	chunk.Rolling = hex.EncodeToString(rolling)
+	strong = CountStrong(chunk.Data[:])
+	chunk.Strong = hex.EncodeToString(strong)
 	return
 }
 
@@ -48,14 +51,14 @@ func TestCompressorFullBufferWritesSignature(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	chunk := randomChunk(t)
-	sigs := signatures.NewSignatures()
-	sigs.Add(chunk.Rolling, chunk.Strong)
+	chunk, rolling, strong := randomChunk(t)
+	sigs := new(signatures.Signatures)
+	sigs.Add(rolling, strong)
 
 	rcv := mock_transmitter.NewMockReceiver(mockCtrl)
 	chunker := mock_transmitter.NewMockChunker(mockCtrl)
 	rcv.EXPECT().Signatures().AnyTimes().Return(sigs, nil)
-	chunker.EXPECT().WriteSignature(chunk.Rolling, chunk.Strong).Times(1)
+	chunker.EXPECT().WriteSignature(rolling, strong).Times(1)
 
 	compressor := NewCompressor(chunker, rcv)
 	n, err := compressor.Write(chunk.Data[:])
@@ -72,15 +75,15 @@ func TestCompressorRecognizeSignatureAtOffset(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	chunk := randomChunk(t)
-	sigs := signatures.NewSignatures()
-	sigs.Add(chunk.Rolling, chunk.Strong)
+	chunk, rolling, strong := randomChunk(t)
+	sigs := new(signatures.Signatures)
+	sigs.Add(rolling, strong)
 
 	rcv := mock_transmitter.NewMockReceiver(mockCtrl)
 	chunker := mock_transmitter.NewMockChunker(mockCtrl)
 	rcv.EXPECT().Signatures().AnyTimes().Return(sigs, nil)
 	first := chunker.EXPECT().Write(byte('a'))
-	chunker.EXPECT().WriteSignature(chunk.Rolling, chunk.Strong).After(first)
+	chunker.EXPECT().WriteSignature(rolling, strong).After(first)
 
 	compressor := NewCompressor(chunker, rcv)
 	n, err := compressor.Write([]byte{'a'})
@@ -96,20 +99,22 @@ func TestCompressorOverlappingSignatures(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	chunk := randomChunk(t)
-	sigs := signatures.NewSignatures()
-	sigs.Add(chunk.Rolling, chunk.Strong)
-	var overlap Chunk
+	chunk, rolling, strong := randomChunk(t)
+	sigs := new(signatures.Signatures)
+	sigs.Add(rolling, strong)
+	var overlap receiver.Chunk
 	copy(overlap.Data[:], append(chunk.Data[1:], chunk.Data[0]+1))
-	overlap.CountRolling()
-	overlap.CountStrong()
-	sigs.Add(overlap.Rolling, overlap.Strong)
+	overlapRolling := CountRolling(overlap.Data[:])
+	overlap.Rolling = hex.EncodeToString(overlapRolling)
+	overlapStrong := CountStrong(overlap.Data[:])
+	overlap.Strong = hex.EncodeToString(overlapStrong)
+	sigs.Add(overlapRolling, overlapStrong)
 
 	rcv := mock_transmitter.NewMockReceiver(mockCtrl)
 	chunker := mock_transmitter.NewMockChunker(mockCtrl)
 	rcv.EXPECT().Signatures().AnyTimes().Return(sigs, nil)
 	gomock.InOrder(
-		chunker.EXPECT().WriteSignature(chunk.Rolling, chunk.Strong),
+		chunker.EXPECT().WriteSignature(rolling, strong),
 		chunker.EXPECT().Write(overlap.Data[len(overlap.Data)-1]),
 		chunker.EXPECT().Close(),
 	)
@@ -128,9 +133,9 @@ func TestCompressorNoMatchingSignature(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	chunk := randomChunk(t)
-	sigs := signatures.NewSignatures()
-	sigs.Add(chunk.Rolling, fmt.Sprint(chunk.Strong, "aaa"))
+	chunk, rolling, strong := randomChunk(t)
+	sigs := new(signatures.Signatures)
+	sigs.Add(rolling, append(strong, 'b'))
 
 	rcv := mock_transmitter.NewMockReceiver(mockCtrl)
 	chunker := mock_transmitter.NewMockChunker(mockCtrl)
@@ -142,10 +147,12 @@ func TestCompressorNoMatchingSignature(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(len(chunk.Data), n)
 
+	log.Println("Starting to stuff")
 	for _, e := range chunk.Data[1:] {
 		write = chunker.EXPECT().Write(e).After(write)
 	}
 	chunker.EXPECT().Close().After(write)
+	log.Println("Stuffing done")
 	err = compressor.Close()
 	assert.NoError(err)
 }

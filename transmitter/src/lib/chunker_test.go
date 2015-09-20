@@ -150,10 +150,10 @@ func TestChunkerWriteSignature(t *testing.T) {
 
 	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := mock_transmitter.NewMockEncoder(mockCtrl)
-	encoder.EXPECT().WriteSignature("123", "abc")
+	encoder.EXPECT().WriteSignature([]byte("123"), []byte("abc"))
 
 	chunker := NewChunker(encoder, receiver)
-	err := chunker.WriteSignature("123", "abc")
+	err := chunker.WriteSignature([]byte("123"), []byte("abc"))
 	assert.NoError(err)
 }
 
@@ -165,12 +165,12 @@ func TestChunkerFlushBeforeWriteSignature(t *testing.T) {
 	receiver := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := mock_transmitter.NewMockEncoder(mockCtrl)
 	flush := encoder.EXPECT().Write([]byte{'a'}).Return(1, nil)
-	encoder.EXPECT().WriteSignature("123", "abc").After(flush)
+	encoder.EXPECT().WriteSignature([]byte("123"), []byte("abc")).After(flush)
 
 	chunker := NewChunker(encoder, receiver)
 	err := chunker.Write('a')
 	assert.NoError(err)
-	err = chunker.WriteSignature("123", "abc")
+	err = chunker.WriteSignature([]byte("123"), []byte("abc"))
 	assert.NoError(err)
 }
 
@@ -181,7 +181,7 @@ func TestChunkerFullBufferCreatesSignature(t *testing.T) {
 
 	rcv := mock_transmitter.NewMockReceiver(mockCtrl)
 	encoder := mock_transmitter.NewMockEncoder(mockCtrl)
-	saveChunk := rcv.EXPECT().SaveChunk(gomock.Any())
+	saveChunk := rcv.EXPECT().SaveChunk(gomock.Any(), gomock.Any(), gomock.Any())
 	encoder.EXPECT().WriteSignature(gomock.Any(), gomock.Any()).After(saveChunk)
 
 	chunker := NewChunker(encoder, rcv)
