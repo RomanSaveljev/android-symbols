@@ -1,35 +1,65 @@
 package signatures
 
 import (
+	"bytes"
 	"sort"
 )
 
+type groupedSignatures struct {
+	rolling []byte
+	strongSignatures  strongSignatures
+}
+
+type byRollingSorter struct {
+	collection []groupedSignatures
+}
+
+func (this byRollingSorter) Len() int {
+	return len(this.collection)
+}
+
+func (this byRollingSorter) Less(i, j int) bool {
+	return bytes.Compare(this.collection[i].rolling, this.collection[j].rolling) < 0
+}
+
+func (this byRollingSorter) Swap(i, j int) {
+	this.collection[i], this.collection[j] = this.collection[j], this.collection[i]
+}
+
 // Signatures collection is arranged by
 type Signatures struct {
-	collection map[string][]string
+	collection []groupedSignatures
 }
 
-func NewSignatures() *Signatures {
-	signatures := Signatures{make(map[string][]string)}
-	return &signatures
-}
-
-func (this *Signatures) Add(rolling string, sig string) {
-	_, exists := this.collection[rolling]
-	if !exists {
-		existing := make([]string, 0, 1)
-		this.collection[rolling] = existing
+func (this *Signatures) findByRolling(rolling []byte) *groupedSignatures {
+	searchRolling := func(i int) bool {
+		return bytes.Equal(rolling, this.collection[i].rolling)
 	}
-	if sort.SearchStrings(this.collection[rolling], sig) != -1 {
-		this.collection[rolling] = append(this.collection[rolling], sig)
-		sort.Strings(this.collection[rolling])
+	idxRolling := sort.Search(len(this.collection), searchRolling)
+	if idxRolling == len(this.collection) {
+		return nil
+	} else {
+		return &this.collection[idxRolling]
 	}
 }
 
-func (this *Signatures) Get(rolling string) []string {
-	existing, exists := this.collection[rolling]
-	if !exists {
-		existing = []string{}
+func (this *Signatures) Add(rolling, strong []byte) {
+	group := this.findByRolling(rolling)
+	if group == nil {
+		group = new(groupedSignatures)
+		group.rolling = append([]byte{}, rolling...)
+		group.strongSignatures = addUnique(group.strongSignatures, strong)
+		this.collection = append(this.collection, *group)
+		sort.Sort(byRollingSorter{this.collection})
+	} else {
+		group.strongSignatures = addUnique(group.strongSignatures, strong)
 	}
-	return existing
+}
+
+func (this *Signatures) Get(rolling []byte) (ret StrongSignatures) {
+	sig := this.findByRolling(rolling)
+	if sig != nil {
+		ret = &sig.strongSignatures
+	}
+	return
 }
