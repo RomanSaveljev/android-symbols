@@ -4,12 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib"
+	"log"
 	"net/rpc"
 	"os"
 	"os/exec"
 	"path"
+	"runtime/pprof"
 	"strings"
-	"log"
 )
 
 const APP_VERSION = "0.0.1"
@@ -20,6 +21,12 @@ const APP_VERSION = "0.0.1"
 var versionFlag *bool = flag.Bool("v", false, "Print the version number")
 
 func main() {
+	profile := os.Getenv("CPU_PROFILE")
+	if len(profile) > 0 {
+		prof, _ := os.Create(profile)
+		pprof.StartCPUProfile(prof)
+	}
+
 	log.Println("TX: starting")
 	flag.Parse() // Scan the arguments list
 
@@ -52,5 +59,9 @@ func main() {
 			transmitter.ProcessFileSync(file, rcv)
 			file.Close()
 		}
+	}
+
+	if len(profile) > 0 {
+		pprof.StopCPUProfile()
 	}
 }
