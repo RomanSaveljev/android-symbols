@@ -3,6 +3,7 @@ package transmitter
 import (
 	"io"
 	"sort"
+	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 )
 
 // Takes a list of signatures and produces a stream of literal bytes
@@ -11,7 +12,6 @@ import (
 // able to hold one block of data.
 
 type Compressor struct {
-	Chunk
 	chunker  Chunker
 	receiver Receiver
 	buffer   []byte
@@ -19,23 +19,27 @@ type Compressor struct {
 
 func NewCompressor(chunker Chunker, rcv Receiver) io.WriteCloser {
 	tx := Compressor{chunker: chunker, receiver: rcv}
+	tx.buffer = make([]byte, receiver.CHUNK_SIZE)
 	tx.emptyBuffer()
 	return &tx
 }
 
 func (this *Compressor) emptyBuffer() {
-	this.buffer = this.Data[:0]
+	this.buffer = this.buffer[:0]
 }
 
 func (this *Compressor) isFull() bool {
-	return len(this.buffer) == cap(this.buffer)
+	return len(this.buffer) == receiver.CHUNK_SIZE
 }
 
 func (this *Compressor) shiftData() {
+	this.buffer = this.buffer[1:]
+	/*
 	for i := 0; i < len(this.buffer)-1; i++ {
 		this.Data[i] = this.Data[i+1]
 	}
-	this.buffer = this.Data[0 : len(this.buffer)-1]	
+	this.buffer = this.Data[0 : len(this.buffer)-1]
+	*/	
 }
 
 func (this *Compressor) writeFirst() error {
@@ -56,12 +60,12 @@ func (this *Compressor) writeSignature(rolling string, signature string) error {
 
 func (this *Compressor) tryWriteSignature() (err error) {
 	if signatures, err := this.receiver.Signatures(); err == nil {
-		rolling := this.CountRolling()
+		rolling := GetRolling(this.buffer)
 		candidates := signatures.Get(rolling)
 		if len(candidates) == 0 {
 			err = this.writeFirst()
 		} else {
-			strong := this.CountStrong()
+			strong := GetStrong(this.buffer)
 			idx := sort.Search(len(candidates), func(i int) bool { return strong == candidates[i] })
 			if idx == len(candidates) {
 				err = this.writeFirst()
