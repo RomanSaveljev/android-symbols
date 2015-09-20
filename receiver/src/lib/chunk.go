@@ -1,6 +1,6 @@
 package receiver
 
-const CHUNK_SIZE = 4096
+const CHUNK_SIZE = 8*4096
 
 type Chunk struct {
 	Signature

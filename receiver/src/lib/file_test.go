@@ -92,12 +92,12 @@ func TestFileSaveChunk(t *testing.T) {
 	var chunk Chunk
 	chunk.Rolling = "abc"
 	chunk.Strong = "def"
-	rand.Read(chunk.data[:])
+	rand.Read(chunk.Data[:])
 
 	mock := NewMockfileSystemWorker(mockCtrl)
 	mock.EXPECT().MkdirAll("/a/b/c/d.txt").Return(nil)
 	mkdirAll := mock.EXPECT().MkdirAll("/a/b/c/d.txt/abc").Return(nil)
-	mock.EXPECT().WriteFile("/a/b/c/d.txt/abc/def", chunk.data[:]).After(mkdirAll).Return(nil)
+	mock.EXPECT().WriteFile("/a/b/c/d.txt/abc/def", chunk.Data[:]).After(mkdirAll).Return(nil)
 
 	file, err := newFileInjected("/a/b/c/d.txt", mock)
 	assert.NotNil(file)
