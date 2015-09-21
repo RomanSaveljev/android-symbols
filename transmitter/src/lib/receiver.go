@@ -6,7 +6,6 @@ import (
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
 	"io"
-	"log"
 )
 
 type Client interface {
@@ -41,7 +40,6 @@ func NewReceiver(fileName string, client Client) (Receiver, error) {
 
 func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) {
 	if this.signatures == nil {
-		log.Println("realReceiver.Signatures begin")
 		sigs = new(signatures.Signatures)
 		for true {
 			var sig receiver.Signature
@@ -62,7 +60,6 @@ func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) 
 			this.signatures = sigs
 			err = nil
 		}
-		log.Println("realReceiver.Signatures end")
 	} else {
 		sigs = this.signatures
 	}
