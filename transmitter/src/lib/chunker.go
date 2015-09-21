@@ -38,8 +38,8 @@ func (this *realChunker) isFull() bool {
 
 func (this *realChunker) Flush() (err error) {
 	if this.isFull() {
-		rolling := CountRolling(this.buffer)
-		strong := CountStrong(this.buffer)
+		rolling := CountRolling(this.buffer, []byte{})
+		strong := CountStrong(this.buffer, []byte{})
 		if err = this.receiver.SaveChunk(rolling, strong, this.buffer); err == nil {
 			if err = this.writeSignature(rolling, strong); err == nil {
 				this.emptyBuffer()
