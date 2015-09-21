@@ -5,7 +5,6 @@ import (
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
 	"io"
-	"log"
 	"encoding/hex"
 )
 
@@ -47,17 +46,16 @@ func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) 
 			if sig, err = this.nextSignature(); err == nil {
 				var rolling, strong []byte
 				if rolling , err = hex.DecodeString(sig.Rolling); err != nil {
-					panic(err.Error())
+					continue
 				}
 				if strong, err = hex.DecodeString(sig.Strong); err != nil {
-					panic(err.Error())
+					continue
 				}
 				sigs.Add(rolling, strong)
 			} else {
 				break
 			}
 		}
-		log.Printf("%v %v %v", err, io.EOF, err == io.EOF)
 		if err.Error() == io.EOF.Error() {
 			this.signatures = sigs
 			err = nil
@@ -97,7 +95,6 @@ func (this *realReceiver) Close() (err error) {
 
 // Creates a new chunk
 func (this *realReceiver) SaveChunk(rolling, strong, data []byte) error {
-	log.Println("TX: SaveChunk")
 	var chunk receiver.Chunk
 	chunk.Rolling = hex.EncodeToString(rolling)
 	chunk.Strong = hex.EncodeToString(strong)

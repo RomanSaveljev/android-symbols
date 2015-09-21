@@ -14,7 +14,7 @@ func TestProcessFileSync(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	sigs := signatures.Signatures{}
+	sigs := new(signatures.Signatures)
 	rcv := mock_transmitter.NewMockReceiver(mockCtrl)
 	rcv.EXPECT().Signatures().AnyTimes().Return(sigs, nil)
 	write := rcv.EXPECT().Write([]byte("0etOA2)[BQ3FQB,A7]@c")).Return(20, nil)
