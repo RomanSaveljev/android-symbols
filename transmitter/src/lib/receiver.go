@@ -1,11 +1,12 @@
 package transmitter
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
 	"io"
-	"encoding/hex"
+	"log"
 )
 
 type Client interface {
@@ -23,9 +24,9 @@ type Receiver interface {
 //go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_receiver.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Receiver
 
 type realReceiver struct {
-	client Client
-	token  string
-	stream string
+	client     Client
+	token      string
+	stream     string
 	signatures *signatures.Signatures
 }
 
@@ -40,12 +41,13 @@ func NewReceiver(fileName string, client Client) (Receiver, error) {
 
 func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) {
 	if this.signatures == nil {
+		log.Println("realReceiver.Signatures begin")
 		sigs = new(signatures.Signatures)
 		for true {
 			var sig receiver.Signature
 			if sig, err = this.nextSignature(); err == nil {
 				var rolling, strong []byte
-				if rolling , err = hex.DecodeString(sig.Rolling); err != nil {
+				if rolling, err = hex.DecodeString(sig.Rolling); err != nil {
 					continue
 				}
 				if strong, err = hex.DecodeString(sig.Strong); err != nil {
@@ -60,6 +62,7 @@ func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) 
 			this.signatures = sigs
 			err = nil
 		}
+		log.Println("realReceiver.Signatures end")
 	} else {
 		sigs = this.signatures
 	}

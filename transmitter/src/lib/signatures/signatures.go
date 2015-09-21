@@ -36,10 +36,10 @@ func (this *Signatures) findByRolling(rolling []byte) *groupedSignatures {
 		return bytes.Compare(this.collection[i].rolling, rolling) >= 0
 	}
 	idxRolling := sort.Search(len(this.collection), searchRolling)
-	if idxRolling == len(this.collection) {
-		return nil
-	} else {
+	if idxRolling != len(this.collection) && bytes.Equal(rolling, this.collection[idxRolling].rolling) {
 		return &this.collection[idxRolling]
+	} else {
+		return nil
 	}
 }
 
