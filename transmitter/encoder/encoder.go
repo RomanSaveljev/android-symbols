@@ -1,4 +1,4 @@
-package transmitter
+package encoder
 
 import (
 	"encoding/ascii85"
@@ -11,7 +11,7 @@ type Encoder interface {
 	WriteSignature(rolling []byte, strong []byte) error
 }
 
-//go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_encoder.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Encoder
+//go:generate $GOPATH/bin/mockgen -package mock -destination ../mock/mock_encoder.go github.com/RomanSaveljev/android-symbols/transmitter/encoder Encoder
 
 type ascii85Writer struct {
 	writer       io.WriteCloser

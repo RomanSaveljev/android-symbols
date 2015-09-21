@@ -1,4 +1,4 @@
-package transmitter
+package chunker
 
 import (
 	//"github.com/Redundancy/go-sync/rollsum"

@@ -1,4 +1,4 @@
-package transmitter
+package receiver
 
 import (
 	"crypto/rand"

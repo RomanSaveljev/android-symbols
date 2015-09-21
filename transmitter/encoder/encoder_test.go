@@ -1,4 +1,4 @@
-package transmitter
+package encoder
 
 import (
 	"github.com/stretchr/testify/assert"

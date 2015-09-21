@@ -1,7 +1,9 @@
-package transmitter
+package compressor
 
 import (
-	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	rxapp "github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/chunker"
+	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
 	"io"
 )
 
@@ -11,27 +13,27 @@ import (
 // able to hold one block of data.
 
 type Compressor struct {
-	chunker  Chunker
-	receiver Receiver
+	chunker  chunker.Chunker
+	receiver receiver.Receiver
 	buffer []byte
 	original []byte
-	roller Roller
+	roller chunker.Roller
 }
 
-func NewCompressor(chunker Chunker, rcv Receiver) io.WriteCloser {
+func NewCompressor(chunker chunker.Chunker, rcv receiver.Receiver) io.WriteCloser {
 	tx := Compressor{chunker: chunker, receiver: rcv}
-	tx.buffer = make([]byte, 0, receiver.CHUNK_SIZE * 2)
+	tx.buffer = make([]byte, 0, rxapp.CHUNK_SIZE * 2)
 	tx.original = tx.buffer
 	return &tx
 }
 
 func (this *Compressor) emptyBuffer() {
 	this.buffer = this.original
-	this.roller = Roller{}
+	this.roller = chunker.Roller{}
 }
 
 func (this *Compressor) isFull() bool {
-	return len(this.buffer) == receiver.CHUNK_SIZE
+	return len(this.buffer) == rxapp.CHUNK_SIZE
 }
 
 func (this *Compressor) writeFirst() error {
@@ -64,7 +66,7 @@ func (this *Compressor) tryWriteSignature() (err error) {
 		if candidates == nil {
 			err = this.writeFirst()
 		} else {
-			strong := CountStrong(this.buffer)
+			strong := chunker.CountStrong(this.buffer)
 			if candidates.Has(strong) {
 				err = this.writeSignature(rolling, strong)
 			} else {

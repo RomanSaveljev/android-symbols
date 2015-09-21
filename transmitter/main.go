@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib"
+	//"github.com/RomanSaveljev/android-symbols/transmitter/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
+	"github.com/RomanSaveljev/android-symbols/transmitter/processor"
 	"log"
 	"net/rpc"
 	"os"
@@ -55,8 +57,8 @@ func main() {
 	defer client.Close()
 	for _, f := range rest {
 		if file, err := os.Open(f); err == nil {
-			rcv, _ := transmitter.NewReceiver(path.Join(prefix, f), client)
-			transmitter.ProcessFileSync(file, rcv)
+			rcv, _ := receiver.NewReceiver(path.Join(prefix, f), client)
+			processor.ProcessFileSync(file, rcv)
 			file.Close()
 		}
 	}

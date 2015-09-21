@@ -1,4 +1,4 @@
-package transmitter
+package compressor
 
 import (
 	"crypto/rand"

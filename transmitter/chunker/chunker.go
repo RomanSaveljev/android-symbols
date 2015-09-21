@@ -1,8 +1,10 @@
-package transmitter
+package chunker
 
 import (
 	"errors"
-	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	rxapp "github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/encoder"
+	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
 )
 
 var ErrBufferIsFull = errors.New("Buffer is full")
@@ -14,17 +16,17 @@ type Chunker interface {
 	Close() (err error)
 }
 
-//go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_chunker.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Chunker
+//go:generate $GOPATH/bin/mockgen -package mock -destination ../mock/mock_chunker.go github.com/RomanSaveljev/android-symbols/transmitter/chunker Chunker
 
 type realChunker struct {
 	buffer   []byte
-	encoder  Encoder
-	receiver Receiver
+	encoder  encoder.Encoder
+	receiver receiver.Receiver
 }
 
-func NewChunker(encoder Encoder, rcv Receiver) Chunker {
+func NewChunker(encoder encoder.Encoder, rcv receiver.Receiver) Chunker {
 	var chunker = realChunker{encoder: encoder, receiver: rcv}
-	chunker.buffer = make([]byte, 0, receiver.CHUNK_SIZE)
+	chunker.buffer = make([]byte, 0, rxapp.CHUNK_SIZE)
 	return &chunker
 }
 
@@ -33,7 +35,7 @@ func (this *realChunker) emptyBuffer() {
 }
 
 func (this *realChunker) isFull() bool {
-	return len(this.buffer) == receiver.CHUNK_SIZE
+	return len(this.buffer) == rxapp.CHUNK_SIZE
 }
 
 func (this *realChunker) Flush() (err error) {

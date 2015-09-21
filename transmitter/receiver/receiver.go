@@ -1,10 +1,10 @@
-package transmitter
+package receiver
 
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
-	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/signatures"
+	rxapp "github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/signatures"
 	"io"
 )
 
@@ -12,15 +12,14 @@ type Client interface {
 	Call(serviceMethod string, args interface{}, reply interface{}) error
 }
 
-//go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_client.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Client
-
 type Receiver interface {
 	io.WriteCloser
 	SaveChunk(rolling, strong, data []byte) error
 	Signatures() (*signatures.Signatures, error)
 }
 
-//go:generate $GOPATH/bin/mockgen -package mock_transmitter -destination mock/mock_receiver.go github.com/RomanSaveljev/android-symbols/transmitter/src/lib Receiver
+//go:generate $GOPATH/bin/mockgen -package mock -destination ../mock/mock_receiver.go github.com/RomanSaveljev/android-symbols/transmitter/receiver Receiver
+//go:generate $GOPATH/bin/mockgen -package mock -destination ../mock/mock_client.go github.com/RomanSaveljev/android-symbols/transmitter/receiver Client
 
 type realReceiver struct {
 	client     Client
@@ -42,7 +41,7 @@ func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) 
 	if this.signatures == nil {
 		sigs = new(signatures.Signatures)
 		for true {
-			var sig receiver.Signature
+			var sig rxapp.Signature
 			if sig, err = this.nextSignature(); err == nil {
 				var rolling, strong []byte
 				if rolling, err = hex.DecodeString(sig.Rolling); err != nil {
@@ -67,8 +66,8 @@ func (this *realReceiver) Signatures() (sigs *signatures.Signatures, err error) 
 }
 
 // Retrieves next signature or returns error
-func (this *realReceiver) nextSignature() (receiver.Signature, error) {
-	var sig receiver.Signature
+func (this *realReceiver) nextSignature() (rxapp.Signature, error) {
+	var sig rxapp.Signature
 	err := this.client.Call(fmt.Sprint(this.token, ".NextSignature"), 0, &sig)
 	return sig, err
 }
@@ -95,7 +94,7 @@ func (this *realReceiver) Close() (err error) {
 
 // Creates a new chunk
 func (this *realReceiver) SaveChunk(rolling, strong, data []byte) error {
-	var chunk receiver.Chunk
+	var chunk rxapp.Chunk
 	chunk.Rolling = hex.EncodeToString(rolling)
 	chunk.Strong = hex.EncodeToString(strong)
 	copy(chunk.Data[:], data)
