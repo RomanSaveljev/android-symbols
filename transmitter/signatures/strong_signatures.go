@@ -2,7 +2,6 @@ package signatures
 
 import (
 	"bytes"
-	"sort"
 )
 
 type StrongSignatures interface {
@@ -12,13 +11,12 @@ type StrongSignatures interface {
 type strongSignatures [][]byte
 
 func (this strongSignatures) Has(strong []byte) bool {
-	searchStrong := func(i int) bool {
-		return bytes.Compare(this[i], strong) >= 0
+	for _, s := range this {
+		if bytes.Equal(strong, s) {
+			return true
+		}
 	}
-	n := len(this)
-	idx := sort.Search(n, searchStrong)
-	ret := idx != n && bytes.Equal(strong, this[idx])
-	return ret
+	return false
 }
 
 func (this strongSignatures) Len() int {
@@ -36,7 +34,6 @@ func (this strongSignatures) Swap(i, j int) {
 func addUnique(this strongSignatures, strong []byte) strongSignatures {
 	if !this.Has(strong) {
 		this = append(this, append([]byte{}, strong...))
-		sort.Sort(this)
 	}
 	return this
 }
