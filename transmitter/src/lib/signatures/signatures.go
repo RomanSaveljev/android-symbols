@@ -33,7 +33,7 @@ type Signatures struct {
 
 func (this *Signatures) findByRolling(rolling []byte) *groupedSignatures {
 	searchRolling := func(i int) bool {
-		return bytes.Equal(rolling, this.collection[i].rolling)
+		return bytes.Compare(this.collection[i].rolling, rolling) >= 0
 	}
 	idxRolling := sort.Search(len(this.collection), searchRolling)
 	if idxRolling == len(this.collection) {

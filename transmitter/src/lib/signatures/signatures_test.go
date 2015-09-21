@@ -2,8 +2,8 @@ package signatures
 
 import (
 	"github.com/stretchr/testify/assert"
-	"testing"
 	"reflect"
+	"testing"
 )
 
 func TestSignaturesAddUnique(t *testing.T) {
@@ -54,4 +54,15 @@ func TestSignaturesMultipleStrong(t *testing.T) {
 	assert.NotNil(existing)
 	assert.True(existing.Has([]byte("zzz")))
 	assert.True(existing.Has([]byte("yyy")))
+}
+
+func TestSignaturesMultipleRolling(t *testing.T) {
+	assert := assert.New(t)
+	var signatures Signatures
+	signatures.Add([]byte("abcd"), []byte("def0"))
+	group := signatures.Get([]byte("abcd"))
+	assert.NotNil(group)
+	signatures.Add([]byte("1234"), []byte("4567"))
+	group = signatures.Get([]byte("1234"))
+	assert.NotNil(group)
 }
