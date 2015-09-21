@@ -15,6 +15,7 @@ type Compressor struct {
 	receiver Receiver
 	buffer []byte
 	original []byte
+	roller Roller
 }
 
 func NewCompressor(chunker Chunker, rcv Receiver) io.WriteCloser {
@@ -26,6 +27,7 @@ func NewCompressor(chunker Chunker, rcv Receiver) io.WriteCloser {
 
 func (this *Compressor) emptyBuffer() {
 	this.buffer = this.original
+	this.roller = Roller{}
 }
 
 func (this *Compressor) isFull() bool {
@@ -52,13 +54,17 @@ func (this *Compressor) writeSignature(rolling []byte, strong []byte) error {
 
 func (this *Compressor) tryWriteSignature() (err error) {
 	if signatures, err := this.receiver.Signatures(); err == nil {
-		buffer, extra := this.buffer, []byte{}
-		rolling := CountRolling(buffer, extra)
+		if this.roller.Calculated() {
+			this.roller.Next(this.buffer[0], this.buffer[len(this.buffer) - 1])
+		} else {
+			this.roller.Calculate(this.buffer)
+		}
+		rolling := this.roller.Value()
 		candidates := signatures.Get(rolling)
 		if candidates == nil {
 			err = this.writeFirst()
 		} else {
-			strong := CountStrong(buffer, extra)
+			strong := CountStrong(this.buffer)
 			if candidates.Has(strong) {
 				err = this.writeSignature(rolling, strong)
 			} else {

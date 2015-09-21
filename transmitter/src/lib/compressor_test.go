@@ -38,7 +38,7 @@ func randomChunk(t *testing.T) (chunk receiver.Chunk, rolling, strong []byte) {
 	n, err := rand.Read(chunk.Data[:])
 	assert.NoError(t, err)
 	assert.Equal(t, len(chunk.Data), n)
-	rolling = CountRolling(chunk.Data[:], []byte{})
+	rolling = CountRolling(chunk.Data[:])
 	chunk.Rolling = hex.EncodeToString(rolling)
 	strong = CountStrong(chunk.Data[:], []byte{})
 	chunk.Strong = hex.EncodeToString(strong)
@@ -103,7 +103,7 @@ func TestCompressorOverlappingSignatures(t *testing.T) {
 	sigs.Add(rolling, strong)
 	var overlap receiver.Chunk
 	copy(overlap.Data[:], append(chunk.Data[1:], chunk.Data[0]+1))
-	overlapRolling := CountRolling(overlap.Data[:], []byte{})
+	overlapRolling := CountRolling(overlap.Data[:])
 	overlap.Rolling = hex.EncodeToString(overlapRolling)
 	overlapStrong := CountStrong(overlap.Data[:], []byte{})
 	overlap.Strong = hex.EncodeToString(overlapStrong)
