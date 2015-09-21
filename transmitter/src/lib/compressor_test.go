@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"encoding/hex"
-	"log"
 )
 
 func TestCompressorWriteStuffsTheBuffer(t *testing.T) {
@@ -39,9 +38,9 @@ func randomChunk(t *testing.T) (chunk receiver.Chunk, rolling, strong []byte) {
 	n, err := rand.Read(chunk.Data[:])
 	assert.NoError(t, err)
 	assert.Equal(t, len(chunk.Data), n)
-	rolling = CountRolling(chunk.Data[:])
+	rolling = CountRolling(chunk.Data[:], []byte{})
 	chunk.Rolling = hex.EncodeToString(rolling)
-	strong = CountStrong(chunk.Data[:])
+	strong = CountStrong(chunk.Data[:], []byte{})
 	chunk.Strong = hex.EncodeToString(strong)
 	return
 }
@@ -104,9 +103,9 @@ func TestCompressorOverlappingSignatures(t *testing.T) {
 	sigs.Add(rolling, strong)
 	var overlap receiver.Chunk
 	copy(overlap.Data[:], append(chunk.Data[1:], chunk.Data[0]+1))
-	overlapRolling := CountRolling(overlap.Data[:])
+	overlapRolling := CountRolling(overlap.Data[:], []byte{})
 	overlap.Rolling = hex.EncodeToString(overlapRolling)
-	overlapStrong := CountStrong(overlap.Data[:])
+	overlapStrong := CountStrong(overlap.Data[:], []byte{})
 	overlap.Strong = hex.EncodeToString(overlapStrong)
 	sigs.Add(overlapRolling, overlapStrong)
 
@@ -147,12 +146,8 @@ func TestCompressorNoMatchingSignature(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(len(chunk.Data), n)
 
-	log.Println("Starting to stuff")
-	for _, e := range chunk.Data[1:] {
-		write = chunker.EXPECT().Write(e).After(write)
-	}
+	write = chunker.EXPECT().Write(gomock.Any()).After(write).Times(len(chunk.Data) - 1)
 	chunker.EXPECT().Close().After(write)
-	log.Println("Stuffing done")
 	err = compressor.Close()
 	assert.NoError(err)
 }

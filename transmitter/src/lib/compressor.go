@@ -1,8 +1,9 @@
 package transmitter
 
 import (
-	"io"
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/src/lib/golang-ring"
+	"io"
 )
 
 // Takes a list of signatures and produces a stream of literal bytes
@@ -13,32 +14,29 @@ import (
 type Compressor struct {
 	chunker  Chunker
 	receiver Receiver
-	buffer   []byte
+	buffer   ring.Ring
 }
 
 func NewCompressor(chunker Chunker, rcv Receiver) io.WriteCloser {
 	tx := Compressor{chunker: chunker, receiver: rcv}
-	tx.buffer = make([]byte, receiver.CHUNK_SIZE)
+	tx.buffer.SetCapacity(receiver.CHUNK_SIZE)
 	tx.emptyBuffer()
 	return &tx
 }
 
 func (this *Compressor) emptyBuffer() {
-	this.buffer = this.buffer[:0]
+	this.buffer.Empty()
 }
 
 func (this *Compressor) isFull() bool {
-	return len(this.buffer) == receiver.CHUNK_SIZE
-}
-
-func (this *Compressor) shiftData() {
-	this.buffer = this.buffer[1:]
+	return this.buffer.Length() == this.buffer.Capacity()
 }
 
 func (this *Compressor) writeFirst() error {
-	err := this.chunker.Write(this.buffer[0])
-	if err == nil {
-		this.shiftData()
+	b := this.buffer.Dequeue()
+	err := this.chunker.Write(b)
+	if err != nil {
+		panic("TODO: implement unshifting data to ring buffer")
 	}
 	return err
 }
@@ -53,12 +51,13 @@ func (this *Compressor) writeSignature(rolling []byte, strong []byte) error {
 
 func (this *Compressor) tryWriteSignature() (err error) {
 	if signatures, err := this.receiver.Signatures(); err == nil {
-		rolling := CountRolling(this.buffer)
+		buffer, extra := this.buffer.Values()
+		rolling := CountRolling(buffer, extra)
 		candidates := signatures.Get(rolling)
 		if candidates == nil {
 			err = this.writeFirst()
 		} else {
-			strong := CountStrong(this.buffer)
+			strong := CountStrong(buffer, extra)
 			if candidates.Has(strong) {
 				err = this.writeSignature(rolling, strong)
 			} else {
@@ -70,10 +69,10 @@ func (this *Compressor) tryWriteSignature() (err error) {
 }
 
 func (this *Compressor) writeOne(p byte) (err error) {
-	this.buffer = append(this.buffer, p)
+	this.buffer.Enqueue(p)
 	if this.isFull() {
 		if err = this.tryWriteSignature(); err != nil {
-			this.buffer = this.buffer[0 : len(this.buffer)-1]
+			panic("TODO: implement undo enqueue for ring buffer")
 		}
 	}
 	return err
@@ -88,10 +87,8 @@ func (this *Compressor) Write(p []byte) (n int, err error) {
 }
 
 func (this *Compressor) Close() (err error) {
-	for len(this.buffer) != 0 && err == nil {
-		if err = this.chunker.Write(this.buffer[0]); err == nil {
-			this.shiftData()
-		}
+	for this.buffer.Length() != 0 && err == nil {
+		err = this.chunker.Write(this.buffer.Dequeue())
 	}
 	if err == nil {
 		err = this.chunker.Close()
