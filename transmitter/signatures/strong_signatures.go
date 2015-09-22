@@ -24,9 +24,14 @@ func (this strongSignatures) IsEmpty() bool {
 	return len(this) == 0
 }
 
-func addUnique(this strongSignatures, strong []byte) strongSignatures {
-	if !this.Has(strong) {
-		this = append(this, append([]byte{}, strong...))
+func addUnique(this StrongSignatures, strong []byte) StrongSignatures {
+	if this == nil {
+		return append(strongSignatures{}, strong)
+	} else if !this.Has(strong) {
+		sigs := this.(strongSignatures)
+		sigs = append(sigs, append([]byte{}, strong...))
+		return sigs
+	} else {
+		return this
 	}
-	return this
 }

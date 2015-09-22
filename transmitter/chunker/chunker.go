@@ -42,7 +42,8 @@ func (this *realChunker) Flush() (err error) {
 		rolling := chunk.CountRolling(this.buffer)
 		strong := chunk.CountStrong(this.buffer)
 		if sigs, err := this.receiver.Signatures(); err == nil {
-			if !sigs.Get(rolling).Has(strong) {
+			group := sigs.Get(rolling)
+			if group == nil || !group.Has(strong) {
 				err = this.receiver.SaveChunk(rolling, strong, this.buffer)
 			}
 		}

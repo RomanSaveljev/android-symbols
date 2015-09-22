@@ -10,16 +10,15 @@ type Signatures interface {
 	Get(rolling uint32) StrongSignatures
 }
 
-func NewSignatures() Signatures {
-	sig := signatures{}
-	sig.collection = make(map[uint32]strongSignatures)
-	return &sig
-}
-
 // Signatures collection is arranged by
 type signatures struct {
-	//collection []groupedSignatures
-	collection map[uint32]strongSignatures
+	collection map[uint32]StrongSignatures
+}
+
+func NewSignatures() Signatures {
+	sig := signatures{}
+	sig.collection = make(map[uint32]StrongSignatures)
+	return &sig
 }
 
 func (this *signatures) Add(rolling uint32, strong []byte) {

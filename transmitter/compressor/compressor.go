@@ -64,7 +64,7 @@ func (this *Compressor) tryWriteSignature() (err error) {
 		}
 		rolling := this.roller.Value()
 		candidates := signatures.Get(rolling)
-		if candidates.IsEmpty() {
+		if candidates == nil || candidates.IsEmpty() {
 			err = this.writeFirst()
 		} else {
 			strong := chunk.CountStrong(this.buffer)

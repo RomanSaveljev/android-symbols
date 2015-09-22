@@ -8,7 +8,7 @@ import (
 
 func TestSignaturesAddUnique(t *testing.T) {
 	assert := assert.New(t)
-	var sig strongSignatures
+	var sig StrongSignatures
 	sig = addUnique(sig, []byte("444"))
 	sig = addUnique(sig, []byte("111"))
 	sig = addUnique(sig, []byte("222"))
@@ -22,7 +22,7 @@ func TestSignaturesAddUnique(t *testing.T) {
 
 func TestSignaturesAddUniqueNoDuplicates(t *testing.T) {
 	assert := assert.New(t)
-	var sig strongSignatures
+	var sig StrongSignatures
 	sig = addUnique(sig, []byte("444"))
 	sig2 := addUnique(sig, []byte("444"))
 	sig3 := addUnique(sig2, []byte("555"))
