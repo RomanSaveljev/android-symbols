@@ -8,7 +8,7 @@ import (
 
 type Encoder interface {
 	io.WriteCloser
-	WriteSignature(rolling []byte, strong []byte) error
+	WriteSignature(rolling uint32, strong []byte) error
 }
 
 //go:generate $GOPATH/bin/mockgen -package mock -destination ../mock/mock_encoder.go github.com/RomanSaveljev/android-symbols/transmitter/encoder Encoder
@@ -59,7 +59,7 @@ func (this *realEncoder) Write(p []byte) (n int, err error) {
 	return this.writer.Write(p)
 }
 
-func (this *realEncoder) WriteSignature(rolling []byte, strong []byte) error {
+func (this *realEncoder) WriteSignature(rolling uint32, strong []byte) error {
 	err := this.writer.Close()
 	this.writer = newAscii85Writer(this.destination)
 	if err == nil {

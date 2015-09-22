@@ -5,13 +5,14 @@ import (
 	rxapp "github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/encoder"
 	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
+	"github.com/RomanSaveljev/android-symbols/transmitter/chunk"
 )
 
 var ErrBufferIsFull = errors.New("Buffer is full")
 
 type Chunker interface {
 	Flush() (err error)
-	WriteSignature(rolling []byte, strong []byte) (err error)
+	WriteSignature(rolling uint32, strong []byte) (err error)
 	Write(b byte) (err error)
 	Close() (err error)
 }
@@ -40,8 +41,8 @@ func (this *realChunker) isFull() bool {
 
 func (this *realChunker) Flush() (err error) {
 	if this.isFull() {
-		rolling := CountRolling(this.buffer)
-		strong := CountStrong(this.buffer)
+		rolling := chunk.CountRolling(this.buffer)
+		strong := chunk.CountStrong(this.buffer)
 		if err = this.receiver.SaveChunk(rolling, strong, this.buffer); err == nil {
 			if err = this.writeSignature(rolling, strong); err == nil {
 				this.emptyBuffer()
@@ -66,14 +67,14 @@ func (this *realChunker) justFlush() (err error) {
 	return
 }
 
-func (this *realChunker) WriteSignature(rolling []byte, strong []byte) (err error) {
+func (this *realChunker) WriteSignature(rolling uint32, strong []byte) (err error) {
 	if err = this.justFlush(); err == nil {
 		err = this.writeSignature(rolling, strong)
 	}
 	return
 }
 
-func (this *realChunker) writeSignature(rolling []byte, strong []byte) error {
+func (this *realChunker) writeSignature(rolling uint32, strong []byte) error {
 	return this.encoder.WriteSignature(rolling, strong)
 }
 
