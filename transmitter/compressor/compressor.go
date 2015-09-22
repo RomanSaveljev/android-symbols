@@ -6,7 +6,6 @@ import (
 	"github.com/RomanSaveljev/android-symbols/transmitter/chunk"
 	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
 	"io"
-	_ "log"
 )
 
 // Takes a list of signatures and produces a stream of literal bytes
@@ -65,7 +64,7 @@ func (this *Compressor) tryWriteSignature() (err error) {
 		}
 		rolling := this.roller.Value()
 		candidates := signatures.Get(rolling)
-		if candidates == nil {
+		if candidates.IsEmpty() {
 			err = this.writeFirst()
 		} else {
 			strong := chunk.CountStrong(this.buffer)

@@ -2,6 +2,7 @@ package encoder
 
 import (
 	"encoding/ascii85"
+	"github.com/RomanSaveljev/android-symbols/transmitter/chunk"
 	"fmt"
 	"io"
 )
@@ -63,7 +64,7 @@ func (this *realEncoder) WriteSignature(rolling uint32, strong []byte) error {
 	err := this.writer.Close()
 	this.writer = newAscii85Writer(this.destination)
 	if err == nil {
-		input := []byte(fmt.Sprintf("\t%x/%x\n", rolling, strong))
+		input := []byte(fmt.Sprint("\t", chunk.RollingToString(rolling), "/", chunk.StrongToString(strong), "\n"))
 		_, err = this.destination.Write(input)
 	}
 	return err

@@ -22,9 +22,8 @@ func (this *Roller) Next(first, last byte) {
 	if !this.calculatedFirst {
 		panic("Must do Calculate() first")
 	}	
-	this.a = this.a - uint32(this.first) + uint32(last)
-	this.b = this.b - receiver.CHUNK_SIZE * uint32(this.first) + this.a
-	this.normalize()
+	this.a = normalize(this.a - uint32(this.first) + uint32(last))
+	this.b = normalize(this.b - receiver.CHUNK_SIZE * uint32(this.first) + this.a)
 	this.first = first
 }
 
@@ -39,7 +38,8 @@ func (this *Roller) Calculate(buffer []byte) {
 		this.a += uint32(b)
 		this.b += uint32(receiver.CHUNK_SIZE - i) * uint32(b)
 	}
-	this.normalize()
+	this.a = normalize(this.a)
+	this.b = normalize(this.b)
 	this.calculatedFirst = true
 	this.first = buffer[0]
 }
@@ -48,9 +48,8 @@ func (this *Roller) Calculated() bool {
 	return this.calculatedFirst
 }
 
-func (this *Roller) normalize() {
-	this.a &= 0xffff
-	this.b &= 0xffff
+func normalize(in uint32) uint32 {
+	return in & 0xffff
 }
 
 func CountRolling(buffer []byte) uint32 {
@@ -81,4 +80,12 @@ func RollingToString(r uint32) string {
 	buf := make([]byte, 4)
 	binary.BigEndian.PutUint32(buf, r)
 	return hex.EncodeToString(buf)
+}
+
+func StrongFromString(s string) ([]byte, error) {
+	return hex.DecodeString(s)
+}
+
+func StrongToString(s []byte) string {
+	return hex.EncodeToString(s)
 }

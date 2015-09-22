@@ -4,7 +4,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
-	"encoding/hex"
 )
 
 func TestSignaturesAddUnique(t *testing.T) {
@@ -32,55 +31,51 @@ func TestSignaturesAddUniqueNoDuplicates(t *testing.T) {
 }
 
 func TestSignaturesGetFromEmpty(t *testing.T) {
-	var sigs Signatures
-	assert.Nil(t, sigs.Get([]byte{'a'}))
+	sigs := NewSignatures()
+	assert.Empty(t, sigs.Get(0xa))
 }
 
 func TestSignaturesGetFromNotEmpty(t *testing.T) {
 	assert := assert.New(t)
-	var sigs Signatures
-	sigs.Add([]byte("abc"), []byte("def"))
-	existing := sigs.Get([]byte("abc"))
-	assert.NotNil(existing)
+	sigs := NewSignatures()
+	sigs.Add(0xabc, []byte("def"))
+	existing := sigs.Get(0xabc)
+	assert.NotEmpty(existing)
 	assert.True(existing.Has([]byte("def")))
 	assert.False(existing.Has([]byte("abc")))
 }
 
 func TestSignaturesMultipleStrong(t *testing.T) {
 	assert := assert.New(t)
-	var signatures Signatures
-	signatures.Add([]byte("5"), []byte("zzz"))
-	signatures.Add([]byte("5"), []byte("yyy"))
-	existing := signatures.Get([]byte("5"))
-	assert.NotNil(existing)
+	signatures := NewSignatures()
+	signatures.Add(0x5, []byte("zzz"))
+	signatures.Add(0x5, []byte("yyy"))
+	existing := signatures.Get(0x5)
+	assert.NotEmpty(existing)
 	assert.True(existing.Has([]byte("zzz")))
 	assert.True(existing.Has([]byte("yyy")))
 }
 
 func TestSignaturesMultipleRolling(t *testing.T) {
 	assert := assert.New(t)
-	var signatures Signatures
-	signatures.Add([]byte("abcd"), []byte("def0"))
-	group := signatures.Get([]byte("abcd"))
+	signatures := NewSignatures()
+	signatures.Add(0xabcd, []byte("def0"))
+	group := signatures.Get(0xabcd)
 	assert.NotNil(group)
-	signatures.Add([]byte("1234"), []byte("4567"))
-	group = signatures.Get([]byte("1234"))
-	assert.NotNil(group)
+	signatures.Add(0x1234, []byte("4567"))
+	group = signatures.Get(0x1234)
+	assert.NotEmpty(group)
 }
 
 func TestSignaturesSearchRolling(t *testing.T) {
-	decode := func(s string) []byte {
-		ret, _ := hex.DecodeString(s)
-		return ret
-	}
 	assert := assert.New(t)
-	var signatures Signatures
-	signatures.Add(decode("dd176afb888331c1b08efb324200f277"), []byte{1})
-	signatures.Add(decode("dd4582ea82e6e153ddfc22710bea7fef"), []byte{2})
-	signatures.Add(decode("dd5eb2641db30a4d24934c3fc873aeba"), []byte{3})
-	signatures.Add(decode("dd72e6b2dca00d9ce5734b3ec90c96a2"), []byte{4})
-	signatures.Add(decode("dd78f7905d03d8af54feeea290a7ce80"), []byte{5})
-	signatures.Add(decode("dd897335619c9d02f9e3a82fcc48bb4d"), []byte{6})
-	candidates := signatures.Get(decode("dd4c51d8c594340bca4898155feaed81"))
-	assert.Nil(candidates)
+	signatures := NewSignatures()
+	signatures.Add(0xdd176afb, []byte{1})
+	signatures.Add(0xdd4582ea, []byte{2})
+	signatures.Add(0xdd5eb264, []byte{3})
+	signatures.Add(0xdd72e6b2, []byte{4})
+	signatures.Add(0xdd78f790, []byte{5})
+	signatures.Add(0xdd897335, []byte{6})
+	candidates := signatures.Get(0xdd4c51d8)
+	assert.Empty(candidates)
 }

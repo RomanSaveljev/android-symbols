@@ -3,11 +3,11 @@ package chunk
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/rand"
 	"fmt"
+	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"crypto/rand"
-	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 )
 
 /*
@@ -121,14 +121,21 @@ func TestRollingToString(t *testing.T) {
 func TestRollerRunningWindow(t *testing.T) {
 	assert := assert.New(t)
 	roller := Roller{}
-	buf := make([]byte, receiver.CHUNK_SIZE) 
+	buf := make([]byte, receiver.CHUNK_SIZE)
 	n, _ := rand.Read(buf)
 	assert.Equal(receiver.CHUNK_SIZE, n)
+
 	firstFull := CountRolling(buf)
 	roller.Calculate(buf)
 	assert.Equal(firstFull, roller.Value())
+
 	buf = append(buf[1:], 'a')
 	nextFull := CountRolling(buf)
-	roller.Next(buf[1], buf[len(buf) - 1])
+	roller.Next(buf[0], buf[len(buf)-1])
+	assert.Equal(nextFull, roller.Value())
+
+	buf = append(buf[1:], 'b')
+	nextFull = CountRolling(buf)
+	roller.Next(buf[0], buf[len(buf)-1])
 	assert.Equal(nextFull, roller.Value())
 }

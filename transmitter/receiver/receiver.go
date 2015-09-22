@@ -1,7 +1,6 @@
 package receiver
 
 import (
-	"encoding/hex"
 	"fmt"
 	rxapp "github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/signatures"
@@ -50,7 +49,7 @@ func (this *realReceiver) Signatures() (sigs signatures.Signatures, err error) {
 					continue
 				}
 				var strong []byte
-				if strong, err = hex.DecodeString(sig.Strong); err != nil {
+				if strong, err = chunk.StrongFromString(sig.Strong); err != nil {
 					continue
 				}
 				sigs.Add(rolling, strong)
@@ -99,7 +98,7 @@ func (this *realReceiver) Close() (err error) {
 func (this *realReceiver) SaveChunk(rolling uint32, strong, data []byte) error {
 	var c rxapp.Chunk
 	c.Rolling = chunk.RollingToString(rolling)
-	c.Strong = hex.EncodeToString(strong)
+	c.Strong = chunk.StrongToString(strong)
 	copy(c.Data[:], data)
 	return this.client.Call(fmt.Sprint(this.token, ".SaveChunk"), c, nil)
 }

@@ -54,23 +54,23 @@ func TestEncoderWriteSignature(t *testing.T) {
 	assert := assert.New(t)
 	var b bytes.Buffer
 	enc := NewEncoder(&b)
-	err := enc.WriteSignature([]byte{1, 2, 3}, []byte{4, 5, 6, 7, 8})
+	err := enc.WriteSignature(0x010203, []byte{4, 5, 6, 7, 8})
 	assert.NoError(err)
 	enc.Close()
-	assert.Equal("\t010203/0405060708\n", b.String())
+	assert.Equal("\t00010203/0405060708\n", b.String())
 }
 
 func TestEncoderWriteTwoSignatures(t *testing.T) {
 	assert := assert.New(t)
 	var b bytes.Buffer
 	enc := NewEncoder(&b)
-	enc.WriteSignature([]byte{0xa, 0xb}, []byte{0x11, 0x12, 0x13})
-	enc.WriteSignature([]byte{0xa, 0xb}, []byte{0x21, 0x22, 0x23})
+	enc.WriteSignature(0x0a0b, []byte{0x11, 0x12, 0x13})
+	enc.WriteSignature(0x0a0b, []byte{0x21, 0x22, 0x23})
 	enc.Close()
 	line, _ := b.ReadString('\n')
-	assert.Equal("\t0a0b/111213\n", line)
+	assert.Equal("\t00000a0b/111213\n", line)
 	line, _ = b.ReadString('\n')
-	assert.Equal("\t0a0b/212223\n", line)
+	assert.Equal("\t00000a0b/212223\n", line)
 }
 
 func TestEncoderSignatureAndBytes(t *testing.T) {
@@ -78,27 +78,27 @@ func TestEncoderSignatureAndBytes(t *testing.T) {
 	var b bytes.Buffer
 	enc := NewEncoder(&b)
 	enc.Write([]byte{'a'})
-	enc.WriteSignature([]byte{0xff}, []byte{0x8c, 0x17, 0xa6, 0x83})
+	enc.WriteSignature(0xff, []byte{0x8c, 0x17, 0xa6, 0x83})
 	enc.Write([]byte{'b'})
 	enc.Write([]byte{'c'})
-	enc.WriteSignature([]byte{0xff, 0xaa}, []byte{0xa7, 0x0e, 0x2e, 0x20, 0x8f})
+	enc.WriteSignature(0xffaa, []byte{0xa7, 0x0e, 0x2e, 0x20, 0x8f})
 	enc.Write([]byte{'d'})
 	enc.Write([]byte{'e'})
 	enc.Write([]byte{'f'})
-	enc.WriteSignature([]byte{0xff, 0xaa, 0xbb}, []byte{0xe8, 0x45, 0x03, 0x41, 0xf1})
+	enc.WriteSignature(0xffaabb, []byte{0xe8, 0x45, 0x03, 0x41, 0xf1})
 	enc.Close()
 	line, _ := b.ReadString('\n')
 	assert.Equal("@/\n", line)
 	line, _ = b.ReadString('\n')
-	assert.Equal("\tff/8c17a683\n", line)
+	assert.Equal("\t000000ff/8c17a683\n", line)
 	line, _ = b.ReadString('\n')
 	assert.Equal("@Uf\n", line)
 	line, _ = b.ReadString('\n')
-	assert.Equal("\tffaa/a70e2e208f\n", line)
+	assert.Equal("\t0000ffaa/a70e2e208f\n", line)
 	line, _ = b.ReadString('\n')
 	assert.Equal("A7]?\n", line)
 	line, _ = b.ReadString('\n')
-	assert.Equal("\tffaabb/e8450341f1\n", line)
+	assert.Equal("\t00ffaabb/e8450341f1\n", line)
 	line = b.String()
 	assert.Equal("", line)
 }
