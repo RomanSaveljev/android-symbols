@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 	//"github.com/RomanSaveljev/android-symbols/transmitter/src/lib"
-	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
 	"github.com/RomanSaveljev/android-symbols/transmitter/processor"
+	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
 	"log"
 	"net/rpc"
 	"os"
@@ -13,6 +13,7 @@ import (
 	"path"
 	"runtime/pprof"
 	"strings"
+	"github.com/edsrzf/mmap-go"
 )
 
 const APP_VERSION = "0.0.1"
@@ -57,9 +58,13 @@ func main() {
 	defer client.Close()
 	for _, f := range rest {
 		if file, err := os.Open(f); err == nil {
-			rcv, _ := receiver.NewReceiver(path.Join(prefix, f), client)
-			processor.ProcessFileSync(file, rcv)
-			file.Close()
+			defer file.Close()
+			if rcv, err := receiver.NewReceiver(path.Join(prefix, f), client); err == nil {
+				if mm, err := mmap.Map(file, mmap.RDONLY, 0); err == nil {
+					defer mm.Unmap()
+					processor.ProcessFileSync(mm, rcv)
+				}
+			}
 		}
 	}
 
