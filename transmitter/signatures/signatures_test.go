@@ -3,8 +3,33 @@ package signatures
 import (
 	"github.com/stretchr/testify/assert"
 	"reflect"
+	"sort"
 	"testing"
 )
+
+const maxKeys = 0xffff
+
+var sigs = NewSignatures()
+var arr = []int{}
+
+func init() {
+	for i := 0; i < maxKeys; i++ {
+		sigs.Add(uint32(i), []byte{0, 1, 2})
+		arr = append(arr, i)
+	}
+}
+
+func BenchmarkSearchByRolling(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sigs.Get(uint32(i & maxKeys))
+	}
+}
+
+func BenchmarkSearchInArray(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		sort.SearchInts(arr, i&maxKeys)
+	}
+}
 
 func TestSignaturesAddUnique(t *testing.T) {
 	assert := assert.New(t)
