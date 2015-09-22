@@ -1,15 +1,12 @@
 package chunker
 
 import (
-	"errors"
 	rxapp "github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 	"github.com/RomanSaveljev/android-symbols/transmitter/encoder"
 	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
 	"github.com/RomanSaveljev/android-symbols/transmitter/chunk"
 	_ "log"
 )
-
-var ErrBufferIsFull = errors.New("Buffer is full")
 
 type Chunker interface {
 	Flush() (err error)
