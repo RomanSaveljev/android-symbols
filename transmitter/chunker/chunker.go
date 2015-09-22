@@ -6,6 +6,7 @@ import (
 	"github.com/RomanSaveljev/android-symbols/transmitter/encoder"
 	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
 	"github.com/RomanSaveljev/android-symbols/transmitter/chunk"
+	_ "log"
 )
 
 var ErrBufferIsFull = errors.New("Buffer is full")
@@ -43,7 +44,12 @@ func (this *realChunker) Flush() (err error) {
 	if this.isFull() {
 		rolling := chunk.CountRolling(this.buffer)
 		strong := chunk.CountStrong(this.buffer)
-		if err = this.receiver.SaveChunk(rolling, strong, this.buffer); err == nil {
+		if sigs, err := this.receiver.Signatures(); err == nil {
+			if !sigs.Get(rolling).Has(strong) {
+				err = this.receiver.SaveChunk(rolling, strong, this.buffer)
+			}
+		}
+		if err == nil {
 			if err = this.writeSignature(rolling, strong); err == nil {
 				this.emptyBuffer()
 			}

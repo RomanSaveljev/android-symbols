@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/chunk"
 	"github.com/RomanSaveljev/android-symbols/transmitter/mock"
+	"github.com/RomanSaveljev/android-symbols/transmitter/signatures"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -179,8 +181,11 @@ func TestChunkerFullBufferCreatesSignature(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
+	sigs := signatures.NewSignatures()
+
 	rcv := mock.NewMockReceiver(mockCtrl)
 	encoder := mock.NewMockEncoder(mockCtrl)
+	rcv.EXPECT().Signatures().AnyTimes().Return(sigs, nil)
 	saveChunk := rcv.EXPECT().SaveChunk(gomock.Any(), gomock.Any(), gomock.Any())
 	encoder.EXPECT().WriteSignature(gomock.Any(), gomock.Any()).After(saveChunk)
 
@@ -213,4 +218,26 @@ func TestChunkerBufferEmptiesOnFlush(t *testing.T) {
 	}
 	err = chunker.Flush()
 	assert.NoError(err)
+}
+
+func TestChunkerDoesNotTransmitExistingChunks(t *testing.T) {
+	assert := assert.New(t)
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	buff := make([]byte, receiver.CHUNK_SIZE)
+	rolling, strong := chunk.CountRolling(buff), chunk.CountStrong(buff)
+
+	sigs := signatures.NewSignatures()
+	sigs.Add(rolling, strong)
+
+	rcv := mock.NewMockReceiver(mockCtrl)
+	encoder := mock.NewMockEncoder(mockCtrl)
+	rcv.EXPECT().Signatures().AnyTimes().Return(sigs, nil)
+	encoder.EXPECT().WriteSignature(rolling, strong)
+
+	chunker := NewChunker(encoder, rcv)
+	for _, b := range buff {
+		err := chunker.Write(b)
+		assert.NoError(err)
+	}
 }
