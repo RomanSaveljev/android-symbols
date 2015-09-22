@@ -1,4 +1,4 @@
-package chunker
+package chunk
 
 import (
 	//"github.com/Redundancy/go-sync/rollsum"
@@ -7,6 +7,7 @@ import (
 	"crypto/md5"
 	//"fmt"
 	"encoding/binary"
+	"encoding/hex"
 )
 
 type Roller struct {
@@ -16,11 +17,8 @@ type Roller struct {
 	result [4]byte
 }
 
-func (this *Roller) Value() []byte {
-	value := uint32(this.a) + (uint32(this.b) << 16)
-	b := this.result[:]
-	binary.LittleEndian.PutUint32(b, value)
-	return b
+func (this *Roller) Value() uint32 {
+	return uint32(this.a) + (uint32(this.b) << 16)
 }
 
 func (this *Roller) Next(first, last byte) {
@@ -58,7 +56,7 @@ func (this *Roller) normalize() {
 	this.b &= 0xffff
 }
 
-func CountRolling(buffer[] byte) []byte {
+func CountRolling(buffer[] byte) uint32 {
 	roller := Roller{}
 	roller.Calculate(buffer)
 	return roller.Value()
@@ -67,4 +65,18 @@ func CountRolling(buffer[] byte) []byte {
 func CountStrong(buffer []byte) []byte {
 	result := md5.Sum(buffer)
 	return result[:]
+}
+
+func RollingFromString(s string) (ret uint32, err error) {
+	var buf []byte
+	if buf, err = hex.DecodeString(s); err == nil {
+		ret = binary.BigEndian.Uint32(buf)
+	}
+	return
+}
+
+func RollingToString(r uint32) string {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, r) 
+	return hex.EncodeToString(buf)
 }
