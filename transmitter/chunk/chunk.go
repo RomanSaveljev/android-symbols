@@ -21,9 +21,9 @@ func (this *Roller) Value() uint32 {
 func (this *Roller) Next(first, last byte) {
 	if !this.calculatedFirst {
 		panic("Must do Calculate() first")
-	}
-	this.b = this.b - (receiver.CHUNK_SIZE+1)*uint32(first) + this.a
+	}	
 	this.a = this.a - uint32(this.first) + uint32(last)
+	this.b = this.b - receiver.CHUNK_SIZE * uint32(this.first) + this.a
 	this.normalize()
 	this.first = first
 }
@@ -37,7 +37,7 @@ func (this *Roller) Calculate(buffer []byte) {
 	this.b = 0
 	for i, b := range buffer {
 		this.a += uint32(b)
-		this.b += uint32(receiver.CHUNK_SIZE-i+1) * uint32(b)
+		this.b += uint32(receiver.CHUNK_SIZE - i) * uint32(b)
 	}
 	this.normalize()
 	this.calculatedFirst = true

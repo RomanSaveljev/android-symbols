@@ -39,7 +39,7 @@ func (_mr *_MockReceiverRecorder) Close() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Close")
 }
 
-func (_m *MockReceiver) SaveChunk(_param0 []byte, _param1 []byte, _param2 []byte) error {
+func (_m *MockReceiver) SaveChunk(_param0 uint32, _param1 []byte, _param2 []byte) error {
 	ret := _m.ctrl.Call(_m, "SaveChunk", _param0, _param1, _param2)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -49,9 +49,9 @@ func (_mr *_MockReceiverRecorder) SaveChunk(arg0, arg1, arg2 interface{}) *gomoc
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "SaveChunk", arg0, arg1, arg2)
 }
 
-func (_m *MockReceiver) Signatures() (*signatures.Signatures, error) {
+func (_m *MockReceiver) Signatures() (signatures.Signatures, error) {
 	ret := _m.ctrl.Call(_m, "Signatures")
-	ret0, _ := ret[0].(*signatures.Signatures)
+	ret0, _ := ret[0].(signatures.Signatures)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

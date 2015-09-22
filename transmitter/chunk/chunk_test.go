@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"crypto/rand"
+	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 )
 
 /*
@@ -114,4 +116,19 @@ func TestRollingToString(t *testing.T) {
 	assert.Equal("00001234", ret)
 	ret = RollingToString(uint32(0x12))
 	assert.Equal("00000012", ret)
+}
+
+func TestRollerRunningWindow(t *testing.T) {
+	assert := assert.New(t)
+	roller := Roller{}
+	buf := make([]byte, receiver.CHUNK_SIZE) 
+	n, _ := rand.Read(buf)
+	assert.Equal(receiver.CHUNK_SIZE, n)
+	firstFull := CountRolling(buf)
+	roller.Calculate(buf)
+	assert.Equal(firstFull, roller.Value())
+	buf = append(buf[1:], 'a')
+	nextFull := CountRolling(buf)
+	roller.Next(buf[1], buf[len(buf) - 1])
+	assert.Equal(nextFull, roller.Value())
 }

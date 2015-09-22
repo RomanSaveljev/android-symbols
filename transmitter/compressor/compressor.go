@@ -6,6 +6,7 @@ import (
 	"github.com/RomanSaveljev/android-symbols/transmitter/chunk"
 	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
 	"io"
+	_ "log"
 )
 
 // Takes a list of signatures and produces a stream of literal bytes
