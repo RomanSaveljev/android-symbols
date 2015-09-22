@@ -1,16 +1,18 @@
 package receiver
 
 import (
+	_ "encoding/binary"
 	"fmt"
 	rxapp "github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/chunk"
 	"github.com/RomanSaveljev/android-symbols/transmitter/signatures"
 	"io"
-	_ "encoding/binary"
-	"github.com/RomanSaveljev/android-symbols/transmitter/chunk"
+	"net/rpc"
 )
 
 type Client interface {
 	Call(serviceMethod string, args interface{}, reply interface{}) error
+	Go(serviceMethod string, args interface{}, reply interface{}, done chan *rpc.Call) *rpc.Call
 }
 
 type Receiver interface {
@@ -27,6 +29,7 @@ type realReceiver struct {
 	token      string
 	stream     string
 	signatures signatures.Signatures
+	call       *rpc.Call
 }
 
 // Registers object on the server side and creates a necessary file tree
@@ -67,26 +70,39 @@ func (this *realReceiver) Signatures() (sigs signatures.Signatures, err error) {
 	return
 }
 
+func (this *realReceiver) ensureRemoteIsFree() (err error) {
+	if this.call != nil {
+		done := <- this.call.Done
+		err = done.Error
+		this.call = nil
+	} 
+	return
+}
+
 // Retrieves next signature or returns error
-func (this *realReceiver) nextSignature() (rxapp.Signature, error) {
-	var sig rxapp.Signature
-	err := this.client.Call(fmt.Sprint(this.token, ".NextSignature"), 0, &sig)
-	return sig, err
+func (this *realReceiver) nextSignature() (sig rxapp.Signature, err error) {
+	if err = this.ensureRemoteIsFree(); err == nil {
+		err = this.client.Call(fmt.Sprint(this.token, ".NextSignature"), 0, &sig)
+	}
+	return
 }
 
 // Writes to the stream
 func (this *realReceiver) Write(p []byte) (n int, err error) {
-	if len(this.stream) == 0 {
-		err = this.client.Call(fmt.Sprint(this.token, ".StartStream"), 0, &this.stream)
-	}
-	if err == nil {
-		err = this.client.Call(fmt.Sprint(this.stream, ".Write"), p, &n)
+	if err = this.ensureRemoteIsFree(); err == nil {
+		if len(this.stream) == 0 {
+			err = this.client.Call(fmt.Sprint(this.token, ".StartStream"), 0, &this.stream)
+		}
+		if err == nil {
+			this.call = this.client.Go(fmt.Sprint(this.stream, ".Write"), p, &n, nil)
+		}
 	}
 	return
 }
 
 // Closes the stream
 func (this *realReceiver) Close() (err error) {
+	this.ensureRemoteIsFree()
 	if len(this.stream) > 0 {
 		err = this.client.Call(fmt.Sprint(this.stream, ".Close"), 0, nil)
 		this.stream = ""
@@ -95,17 +111,17 @@ func (this *realReceiver) Close() (err error) {
 }
 
 // Creates a new chunk
-func (this *realReceiver) SaveChunk(rolling uint32, strong, data []byte) error {
+func (this *realReceiver) SaveChunk(rolling uint32, strong, data []byte) (err error) {
 	var c rxapp.Chunk
 	c.Rolling = chunk.RollingToString(rolling)
 	c.Strong = chunk.StrongToString(strong)
 	copy(c.Data[:], data)
-	err := this.client.Call(fmt.Sprint(this.token, ".SaveChunk"), c, nil)
-	if err == nil {
-		var sigs signatures.Signatures
-		if sigs, err = this.Signatures(); err == nil {
-			sigs.Add(rolling, strong)
-		}
+	var sigs signatures.Signatures
+	if sigs, err = this.Signatures(); err == nil {
+		sigs.Add(rolling, strong)
 	}
-	return err
+	if err = this.ensureRemoteIsFree(); err == nil {
+		this.call = this.client.Go(fmt.Sprint(this.token, ".SaveChunk"), c, nil, nil)
+	}
+	return
 }
