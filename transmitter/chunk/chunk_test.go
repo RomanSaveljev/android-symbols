@@ -1,6 +1,8 @@
 package chunk
 
 import (
+	"bytes"
+	"crypto/md5"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -17,6 +19,22 @@ func TestCountStrong(t *testing.T) {
 	}
 }
 */
+
+var buf = []byte("sadoiewqckjasnasljdlasudfoiewqurpouqwoiduwqd")
+var left = md5.Sum(buf)
+var right = md5.Sum(buf)
+
+func BenchmarkEqualBytes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		bytes.Equal(left[:], right[:])
+	}
+}
+
+func BenchmarkEqualArrays(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = left == right
+	}
+}
 
 func BenchmarkSscanf(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -43,7 +61,7 @@ func BenchmarkSprintf(b *testing.B) {
 		fmt.Sprintf("%08x", 0x12345678)
 		fmt.Sprintf("%08x", 0x12ab34cd)
 		fmt.Sprintf("%08x", 0xfff09ae3)
-	}	
+	}
 }
 
 func BenchmarkRollingToString(b *testing.B) {
@@ -52,7 +70,7 @@ func BenchmarkRollingToString(b *testing.B) {
 		RollingToString(0x12345678)
 		RollingToString(0x12ab34cd)
 		RollingToString(0xfff09ae3)
-	}	
+	}
 }
 
 func TestRollingFromString(t *testing.T) {

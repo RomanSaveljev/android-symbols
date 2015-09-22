@@ -1,20 +1,17 @@
 package chunk
 
 import (
-	//"github.com/Redundancy/go-sync/rollsum"
-	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
-	//"hash/crc32"
 	"crypto/md5"
-	//"fmt"
 	"encoding/binary"
 	"encoding/hex"
+	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
 )
 
 type Roller struct {
-	a, b uint32
-	first byte
+	a, b            uint32
+	first           byte
 	calculatedFirst bool
-	result [4]byte
+	result          [4]byte
 }
 
 func (this *Roller) Value() uint32 {
@@ -25,7 +22,7 @@ func (this *Roller) Next(first, last byte) {
 	if !this.calculatedFirst {
 		panic("Must do Calculate() first")
 	}
-	this.b = this.b - (receiver.CHUNK_SIZE + 1) * uint32(first) + this.a
+	this.b = this.b - (receiver.CHUNK_SIZE+1)*uint32(first) + this.a
 	this.a = this.a - uint32(this.first) + uint32(last)
 	this.normalize()
 	this.first = first
@@ -40,7 +37,7 @@ func (this *Roller) Calculate(buffer []byte) {
 	this.b = 0
 	for i, b := range buffer {
 		this.a += uint32(b)
-		this.b += uint32(receiver.CHUNK_SIZE - i + 1) * uint32(b)
+		this.b += uint32(receiver.CHUNK_SIZE-i+1) * uint32(b)
 	}
 	this.normalize()
 	this.calculatedFirst = true
@@ -56,7 +53,7 @@ func (this *Roller) normalize() {
 	this.b &= 0xffff
 }
 
-func CountRolling(buffer[] byte) uint32 {
+func CountRolling(buffer []byte) uint32 {
 	roller := Roller{}
 	roller.Calculate(buffer)
 	return roller.Value()
@@ -64,6 +61,8 @@ func CountRolling(buffer[] byte) uint32 {
 
 func CountStrong(buffer []byte) []byte {
 	result := md5.Sum(buffer)
+	// based on benchmarking bytes.Equal(a, b) is the same as a == b
+	// so, it is ok to pass around strong signature as a slice
 	return result[:]
 }
 
@@ -80,6 +79,6 @@ func RollingFromString(s string) (ret uint32, err error) {
 
 func RollingToString(r uint32) string {
 	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, r) 
+	binary.BigEndian.PutUint32(buf, r)
 	return hex.EncodeToString(buf)
 }
