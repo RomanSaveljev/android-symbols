@@ -48,6 +48,7 @@ func TestReceiverSaveChunk(t *testing.T) {
 	assert.Equal(len(chunk.Data), n)
 
 	client := mock.NewMockClient(mockCtrl)
+	client.EXPECT().Call("tkn.NextSignature", gomock.Any(), gomock.Any()).Return(io.EOF)
 	gomock.InOrder(
 		client.EXPECT().Call("Synchronizer.StartFile", "/a/b/c/d.txt", gomock.Any()).SetArg(2, "tkn"),
 		client.EXPECT().Call("tkn.SaveChunk", chunk, gomock.Any()),
@@ -57,6 +58,9 @@ func TestReceiverSaveChunk(t *testing.T) {
 	assert.NoError(err)
 	err = rcv.SaveChunk(0x01020304, []byte{3, 4}, chunk.Data[:])
 	assert.NoError(err)
+	sigs, err := rcv.Signatures()
+	assert.NoError(err)
+	assert.True(sigs.Get(0x01020304).Has([]byte{3, 4}))
 	err = rcv.Close()
 	assert.NoError(err)
 }

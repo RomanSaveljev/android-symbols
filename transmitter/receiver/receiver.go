@@ -100,5 +100,12 @@ func (this *realReceiver) SaveChunk(rolling uint32, strong, data []byte) error {
 	c.Rolling = chunk.RollingToString(rolling)
 	c.Strong = chunk.StrongToString(strong)
 	copy(c.Data[:], data)
-	return this.client.Call(fmt.Sprint(this.token, ".SaveChunk"), c, nil)
+	err := this.client.Call(fmt.Sprint(this.token, ".SaveChunk"), c, nil)
+	if err == nil {
+		var sigs signatures.Signatures
+		if sigs, err = this.Signatures(); err == nil {
+			sigs.Add(rolling, strong)
+		}
+	}
+	return err
 }
