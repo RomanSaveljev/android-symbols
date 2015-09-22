@@ -41,7 +41,7 @@ func NewReceiver(fileName string, client Client) (Receiver, error) {
 
 func (this *realReceiver) Signatures() (sigs signatures.Signatures, err error) {
 	if this.signatures == nil {
-		sigs := signatures.NewSignatures()
+		sigs = signatures.NewSignatures()
 		for true {
 			var sig rxapp.Signature
 			if sig, err = this.nextSignature(); err == nil {

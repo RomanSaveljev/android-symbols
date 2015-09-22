@@ -1,53 +1,18 @@
 package receiver
 
 import (
-	_ "crypto/rand"
-	"encoding/binary"
+	"crypto/rand"
+	_ "encoding/binary"
 	"encoding/hex"
-	"fmt"
-	_ "github.com/RomanSaveljev/android-symbols/receiver/src/lib"
-	_ "github.com/RomanSaveljev/android-symbols/transmitter/mock"
-	_ "github.com/golang/mock/gomock"
-	_ "github.com/stretchr/testify/assert"
-	_ "io"
+	_ "fmt"
+	"github.com/RomanSaveljev/android-symbols/receiver/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/mock"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"io"
 	"testing"
 )
 
-func BenchmarkExtractRolling(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		extractRolling("deadbeef")
-		extractRolling("12345678")
-		extractRolling("12ab34cd")
-		extractRolling("fff09ae3")
-	}
-}
-
-func BenchmarkSscanf(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		var result uint32
-		fmt.Sscanf("deadbeef", "%x", &result)
-		fmt.Sscanf("12345678", "%x", &result)
-		fmt.Sscanf("12ab34cd", "%x", &result)
-		fmt.Sscanf("fff09ae3", "%x", &result)
-	}
-}
-
-func decoder(s string) uint32 {
-	buf, _ := hex.DecodeString(s)
-	return binary.LittleEndian.Uint32(buf)
-}
-
-func BenchmarkDecode(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		decoder("deadbeef")
-		decoder("12345678")
-		decoder("12ab34cd")
-		decoder("fff09ae3")
-	}
-
-}
-
-/*
 func TestReceiver(t *testing.T) {
 	assert := assert.New(t)
 	mockCtrl := gomock.NewController(t)
@@ -147,4 +112,3 @@ func TestReceiverGetCachedSignatures(t *testing.T) {
 	candidates = sigs.Get(0x4567)
 	assert.Nil(candidates)
 }
-*/
