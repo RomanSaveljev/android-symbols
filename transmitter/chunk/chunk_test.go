@@ -1,9 +1,9 @@
 package chunk
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"fmt"
 )
 
 /*
@@ -37,6 +37,24 @@ func BenchmarkRollingFromString(b *testing.B) {
 	}
 }
 
+func BenchmarkSprintf(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		fmt.Sprintf("%08x", 0xdeadbeef)
+		fmt.Sprintf("%08x", 0x12345678)
+		fmt.Sprintf("%08x", 0x12ab34cd)
+		fmt.Sprintf("%08x", 0xfff09ae3)
+	}	
+}
+
+func BenchmarkRollingToString(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		RollingToString(0xdeadbeef)
+		RollingToString(0x12345678)
+		RollingToString(0x12ab34cd)
+		RollingToString(0xfff09ae3)
+	}	
+}
+
 func TestRollingFromString(t *testing.T) {
 	assert := assert.New(t)
 	ret, err := RollingFromString("deadbeef")
@@ -51,6 +69,15 @@ func TestRollingFromString(t *testing.T) {
 	ret, err = RollingFromString("00000000")
 	assert.NoError(err)
 	assert.Equal(uint32(0x0), ret)
+	ret, err = RollingFromString("123456")
+	assert.NoError(err)
+	assert.Equal(uint32(0x123456), ret)
+	ret, err = RollingFromString("1234")
+	assert.NoError(err)
+	assert.Equal(uint32(0x1234), ret)
+	ret, err = RollingFromString("12")
+	assert.NoError(err)
+	assert.Equal(uint32(0x12), ret)
 }
 
 func TestRollingToString(t *testing.T) {
@@ -63,4 +90,10 @@ func TestRollingToString(t *testing.T) {
 	assert.Equal("55559999", ret)
 	ret = RollingToString(uint32(0x0))
 	assert.Equal("00000000", ret)
+	ret = RollingToString(uint32(0x123456))
+	assert.Equal("00123456", ret)
+	ret = RollingToString(uint32(0x1234))
+	assert.Equal("00001234", ret)
+	ret = RollingToString(uint32(0x12))
+	assert.Equal("00000012", ret)
 }

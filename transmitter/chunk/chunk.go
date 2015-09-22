@@ -70,6 +70,9 @@ func CountStrong(buffer []byte) []byte {
 func RollingFromString(s string) (ret uint32, err error) {
 	var buf []byte
 	if buf, err = hex.DecodeString(s); err == nil {
+		for len(buf) < 4 {
+			buf = append([]byte{0}, buf...)
+		}
 		ret = binary.BigEndian.Uint32(buf)
 	}
 	return
