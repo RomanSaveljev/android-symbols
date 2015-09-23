@@ -22,7 +22,7 @@ func TestCountStrong(t *testing.T) {
 }
 */
 
-var buf = []byte("sadoiewqckjasnasljdlasudfoiewqurpouqwoiduwqd")
+var buf = make([]byte, receiver.CHUNK_SIZE)
 var left = md5.Sum(buf)
 var right = md5.Sum(buf)
 
@@ -72,6 +72,45 @@ func BenchmarkRollingToString(b *testing.B) {
 		RollingToString(0x12345678)
 		RollingToString(0x12ab34cd)
 		RollingToString(0xfff09ae3)
+	}
+}
+
+func BenchmarkCountRolling(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		CountRolling(buf[:])
+	}
+}
+
+func BenchmarkCountStrong(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		CountStrong(buf[:])
+	}
+}
+
+func BenchmarkDirectCalculation(bench *testing.B) {
+	for j := 0; j < bench.N; j++ {
+		z := uint16(receiver.CHUNK_SIZE)
+		var i, res, res2 uint16
+		for i = 0; i < z; i += 8 {
+			a, b, c, d, e, f, g, h := uint16(buf[i]), uint16(buf[i+1]), uint16(buf[i+2]), uint16(buf[i+3]),
+				uint16(buf[i+4]), uint16(buf[i+5]), uint16(buf[i+6]), uint16(buf[i+7])
+			res += (z-i)*a + (z-i-1)*b + (z-i-2)*c + (z-i-3)*d +
+				(z-i-4)*e + (z-i-5)*f + (z-i-6)*g + (z-i-7)*h
+			res2 += a + b + c + d + e + f + g + h
+		}
+	}
+}
+
+func BenchmarkSimplifiedCalculation(bench *testing.B) {
+	for j := 0; j < bench.N; j++ {
+		z := int64(receiver.CHUNK_SIZE)
+		var i, res, res2 int64
+		for i = 0; i < z; i += 8 {
+			a, b, c, d, e, f, g, h := int64(buf[i]), int64(buf[i+1]), int64(buf[i+2]), int64(buf[i+3]),
+				int64(buf[i+4]), int64(buf[i+5]), int64(buf[i+6]), int64(buf[i+7])
+			res += -a*i + a*z + b*(-i+z-1) - (i-z)*(c+d+e+f+g+h) - 2*c - 3*d - 4*e - 5*f - 6*g - 7*h
+			res2 += a + b + c + d + e + f + g + h
+		}
 	}
 }
 
