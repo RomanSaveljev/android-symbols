@@ -10,19 +10,26 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"io"
+	"net/rpc"
 	"testing"
 )
 
-func TestReceiver(t *testing.T) {
+func TestReceiverSimple(t *testing.T) {
 	assert := assert.New(t)
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
+	call := new(rpc.Call)
+	call.Done = make(chan *rpc.Call, 10)
+	call.Error = nil
+	call.Done <- call
+
 	client := mock.NewMockClient(mockCtrl)
+
 	gomock.InOrder(
 		client.EXPECT().Call("Synchronizer.StartFile", "/a/b/c/d.txt", gomock.Any()).SetArg(2, "file-token"),
 		client.EXPECT().Call("file-token.StartStream", gomock.Not(nil), gomock.Any()).SetArg(2, "stream-token"),
-		client.EXPECT().Call("stream-token.Write", []byte("abc"), gomock.Any()).SetArg(2, 3),
+		client.EXPECT().Go("stream-token.Write", []byte("abc"), gomock.Any(), nil).SetArg(2, 3).Return(call),
 		client.EXPECT().Call("stream-token.Close", gomock.Not(nil), gomock.Any()),
 	)
 
@@ -47,11 +54,16 @@ func TestReceiverSaveChunk(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(len(chunk.Data), n)
 
+	call := new(rpc.Call)
+	call.Done = make(chan *rpc.Call, 10)
+	call.Error = nil
+	call.Done <- call
+
 	client := mock.NewMockClient(mockCtrl)
 	client.EXPECT().Call("tkn.NextSignature", gomock.Any(), gomock.Any()).Return(io.EOF)
 	gomock.InOrder(
 		client.EXPECT().Call("Synchronizer.StartFile", "/a/b/c/d.txt", gomock.Any()).SetArg(2, "tkn"),
-		client.EXPECT().Call("tkn.SaveChunk", chunk, gomock.Any()),
+		client.EXPECT().Go("tkn.SaveChunk", chunk, gomock.Any(), nil).Return(call),
 	)
 
 	rcv, err := NewReceiver("/a/b/c/d.txt", client)
@@ -115,4 +127,36 @@ func TestReceiverGetCachedSignatures(t *testing.T) {
 	assert.NoError(err)
 	candidates = sigs.Get(0x4567)
 	assert.Nil(candidates)
+}
+
+func TestReceiverChannelErrorReported(t *testing.T) {
+	assert := assert.New(t)
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var chunk receiver.Chunk
+	chunk.Rolling = "01020304"
+	chunk.Strong = hex.EncodeToString([]byte{3, 4})
+	n, err := rand.Read(chunk.Data[:])
+	assert.NoError(err)
+	assert.Equal(len(chunk.Data), n)
+
+	call := new(rpc.Call)
+	call.Done = make(chan *rpc.Call, 10)
+	call.Error = rpc.ServerError("first call error")
+	call.Done <- call
+
+	client := mock.NewMockClient(mockCtrl)
+	client.EXPECT().Call("tkn.NextSignature", gomock.Any(), gomock.Any()).Return(io.EOF)
+	gomock.InOrder(
+		client.EXPECT().Call("Synchronizer.StartFile", "/a/b/c/d.txt", gomock.Any()).SetArg(2, "tkn"),
+		client.EXPECT().Go("tkn.SaveChunk", chunk, gomock.Any(), nil).Return(call),
+	)
+
+	rcv, err := NewReceiver("/a/b/c/d.txt", client)
+	assert.NoError(err)
+	err = rcv.SaveChunk(0x01020304, []byte{3, 4}, chunk.Data[:])
+	assert.NoError(err)
+	err = rcv.SaveChunk(0x01020304, []byte{3, 4}, chunk.Data[:])
+	assert.Equal("first call error", err.Error())
 }

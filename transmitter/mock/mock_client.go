@@ -5,6 +5,7 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	rpc "net/rpc"
 )
 
 // Mock of Client interface
@@ -36,4 +37,14 @@ func (_m *MockClient) Call(_param0 string, _param1 interface{}, _param2 interfac
 
 func (_mr *_MockClientRecorder) Call(arg0, arg1, arg2 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Call", arg0, arg1, arg2)
+}
+
+func (_m *MockClient) Go(_param0 string, _param1 interface{}, _param2 interface{}, _param3 chan *rpc.Call) *rpc.Call {
+	ret := _m.ctrl.Call(_m, "Go", _param0, _param1, _param2, _param3)
+	ret0, _ := ret[0].(*rpc.Call)
+	return ret0
+}
+
+func (_mr *_MockClientRecorder) Go(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Go", arg0, arg1, arg2, arg3)
 }
