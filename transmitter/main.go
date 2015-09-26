@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	//"github.com/RomanSaveljev/android-symbols/transmitter/src/lib"
+	"github.com/RomanSaveljev/android-symbols/transmitter/gui"
 	"github.com/RomanSaveljev/android-symbols/transmitter/processor"
 	"github.com/RomanSaveljev/android-symbols/transmitter/receiver"
+	"github.com/edsrzf/mmap-go"
 	"log"
 	"net/rpc"
 	"os"
@@ -13,7 +15,6 @@ import (
 	"path"
 	"runtime/pprof"
 	"strings"
-	"github.com/edsrzf/mmap-go"
 )
 
 const APP_VERSION = "0.0.1"
@@ -22,6 +23,11 @@ const APP_VERSION = "0.0.1"
 
 // The flag package provides a default help printer via -h switch
 var versionFlag *bool = flag.Bool("v", false, "Print the version number")
+
+func processOneFile(mm mmap.MMap, rcv receiver.Receiver, channel chan<- int) {
+	processor.ProcessFileSync(mm, rcv, channel)
+	close(channel)
+}
 
 func main() {
 	profile := os.Getenv("CPU_PROFILE")
@@ -56,17 +62,33 @@ func main() {
 	defer tr.Close()
 	client := rpc.NewClient(tr)
 	defer client.Close()
+	var ui gui.Gui
+	var channels []chan int
 	for _, f := range rest {
 		if file, err := os.Open(f); err == nil {
 			defer file.Close()
 			if rcv, err := receiver.NewReceiver(path.Join(prefix, f), client); err == nil {
 				if mm, err := mmap.Map(file, mmap.RDONLY, 0); err == nil {
-					defer mm.Unmap()
-					processor.ProcessFileSync(mm, rcv)
+					defer func() {
+						log.Println("unmapping")
+						mm.Unmap()
+					}()
+					if info, err := file.Stat(); err == nil {
+						ui.Total += uint64(info.Size())
+						channels = append(channels, make(chan int))
+						go processOneFile(mm, rcv, channels[len(channels) - 1])
+					}
 				}
 			}
 		}
 	}
+
+	inputs := make([]<-chan int, len(channels))
+	for i, _ := range channels {
+		inputs[i] = channels[i]
+	}
+	combined := gui.FanIn(inputs...)
+	ui.Loop(combined)
 
 	if len(profile) > 0 {
 		pprof.StopCPUProfile()
