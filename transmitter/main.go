@@ -67,17 +67,15 @@ func main() {
 	for _, f := range rest {
 		if file, err := os.Open(f); err == nil {
 			defer file.Close()
-			if rcv, err := receiver.NewReceiver(path.Join(prefix, f), client); err == nil {
-				if mm, err := mmap.Map(file, mmap.RDONLY, 0); err == nil {
-					defer func() {
-						log.Println("unmapping")
-						mm.Unmap()
-					}()
-					if info, err := file.Stat(); err == nil {
-						ui.Total += uint64(info.Size())
-						channels = append(channels, make(chan int))
-						go processOneFile(mm, rcv, channels[len(channels) - 1])
-					}
+			if mm, err := mmap.Map(file, mmap.RDONLY, 0); err == nil {
+				defer mm.Unmap()
+				ui.Total += uint64(len(mm))
+				if rcv, err := receiver.NewReceiver(path.Join(prefix, f), client); err == nil {
+					channels = append(channels, make(chan int))
+					go processOneFile(mm[:len(mm)/2], rcv, channels[len(channels)-1])
+					rcv := receiver.NewSecondaryReceiver(rcv, 1)
+					channels = append(channels, make(chan int))
+					go processOneFile(mm[len(mm)/2:], rcv, channels[len(channels)-1])
 				}
 			}
 		}

@@ -18,6 +18,10 @@ Literal bytes passed from the compressor are buffered here. When compressor writ
 
 Encoder converts literal bytes to [ASCII85](https://en.wikipedia.org/wiki/Ascii85) format and mixes them with signatures to prepare the stream file. Encoder will receive bigger portions of data, because of the buffering in the chunker.
 
+# Transmitter GUI
+
+If the transmitter is connected to TTY, it should render the overall progress information as well as current transmission speed. Every compressor will regularly update the total number of bytes they pushed to a dedicated channel. A channel will be allocated per each file. Data from all channels is collected and published to two channels: progress rendering and speed sampling.
+ 
 # Receiver pipeline
 
 Receiver simply collects the data from the encoder and records it to the stream file.

@@ -37,31 +37,3 @@ func TestFanIn(t *testing.T) {
 	}
 	assert.Equal(len(expected), counter)
 }
-
-func TestFanOut(t *testing.T) {
-	assert := assert.New(t)
-	expected := make([]int, 1000)
-	for i := 0; i < len(expected); i++ {
-		expected[i] = i
-	}
-	input := make(chan int)
-
-	outputs := FanOut(input, 41)
-	assert.Equal(41, len(outputs))
-	go func() {
-		for i := 0; i < len(expected); i++ {
-			input <- i
-		}
-		close(input)
-	}()
-	for i := 0; i < len(expected); i++ {
-		for _, c := range outputs {
-			n := <-c
-			assert.Equal(i, n)
-		}
-	}
-	for _, c := range outputs {
-		_, ok := <-c
-		assert.False(ok)
-	}
-}

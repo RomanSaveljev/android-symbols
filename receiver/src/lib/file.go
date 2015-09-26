@@ -3,6 +3,7 @@ package receiver
 //go:generate $GOPATH/bin/mockgen -source file.go -package receiver -destination mock_file_system_worker_test.go
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/rpc"
@@ -103,8 +104,8 @@ func (this *File) nextSignature() (signature Signature, err error) {
 	return
 }
 
-func (this *File) StartStream(dummy int, token *string) (err error) {
-	*token = path.Join(this.pathName, "stream")
+func (this *File) StartStream(index int, token *string) (err error) {
+	*token = path.Join(this.pathName, fmt.Sprint("stream.", index))
 	stream, err := NewStream(*token)
 	if err == nil {
 		err = rpc.RegisterName(*token, stream)

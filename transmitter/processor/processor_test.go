@@ -19,6 +19,8 @@ func TestProcessFileSync(t *testing.T) {
 	write := rcv.EXPECT().Write([]byte("0etOA2)[BQ3FQB,A7]@c")).Return(20, nil)
 	rcv.EXPECT().Write([]byte("\n")).After(write).Return(1, nil)
 
-	err := ProcessFileSync([]byte("123456789abcdefg"), rcv)
+	output := make(chan int, 1)
+	err := ProcessFileSync([]byte("123456789abcdefg"), rcv, output)
 	assert.NoError(err)
+	assert.Equal(16, <- output)
 }

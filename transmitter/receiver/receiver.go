@@ -30,6 +30,7 @@ type realReceiver struct {
 	stream     string
 	signatures signatures.Signatures
 	call       *rpc.Call
+	streamIndex int
 }
 
 // Registers object on the server side and creates a necessary file tree
@@ -39,6 +40,14 @@ func NewReceiver(fileName string, client Client) (Receiver, error) {
 	rx.client = client
 	err := client.Call("Synchronizer.StartFile", fileName, &rx.token)
 	return &rx, err
+}
+
+func NewSecondaryReceiver(receiver Receiver, streamIndex int) Receiver {
+	rcv := *(receiver.(*realReceiver))
+	rcv.call = nil
+	rcv.stream = ""
+	rcv.streamIndex = streamIndex
+	return &rcv
 }
 
 func (this *realReceiver) Signatures() (sigs signatures.Signatures, err error) {
@@ -91,7 +100,7 @@ func (this *realReceiver) nextSignature() (sig rxapp.Signature, err error) {
 func (this *realReceiver) Write(p []byte) (n int, err error) {
 	if err = this.ensureRemoteIsFree(); err == nil {
 		if len(this.stream) == 0 {
-			err = this.client.Call(fmt.Sprint(this.token, ".StartStream"), 0, &this.stream)
+			err = this.client.Call(fmt.Sprint(this.token, ".StartStream"), this.streamIndex, &this.stream)
 		}
 		if err == nil {
 			this.call = this.client.Go(fmt.Sprint(this.stream, ".Write"), p, &n, nil)
